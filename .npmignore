@@ -3,6 +3,7 @@
 .editorconfig
 .gitignore
 .travis.yml
-yarn.lock
 coverage
+README.org
+yarn.lock
 !*.d.ts

@@ -1,0 +1,8 @@
+#+HTML: <h1>WCB <sub><sub><sub>Webpack Config builder</sub></sub></sub></h1>
+[[https://travis-ci.org/jupl/wcb][file:https://img.shields.io/travis/jupl/wcb.svg?label=travis&style=flat-square]]
+[[https://codecov.io/gh/jupl/wcb][file:https://img.shields.io/codecov/c/github/jupl/wcb.svg?style=flat-square]]
+[[https://david-dm.org/jupl/wcb][file:https://img.shields.io/david/jupl/wcb.svg?style=flat-square]]
+[[https://david-dm.org/jupl/wcb?type=dev][file:https://img.shields.io/david/dev/jupl/wcb.svg?style=flat-square]]
+
+** About
+Personal Webpack config builder.
