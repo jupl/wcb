@@ -1,5 +1,8 @@
 *.ts
 *.json
+.editorconfig
+.gitignore
+.travis.yml
 yarn.lock
 coverage
 !*.d.ts
