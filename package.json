@@ -1,0 +1,60 @@
+{
+  "name": "wcb",
+  "version": "0.1.0",
+  "description": "Personal Webpack config builder",
+  "author": "jupl",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jupl/wcb/issues"
+  },
+  "homepage": "https://github.com/jupl/wcb#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jupl/wcb"
+  },
+  "main": "index.js",
+  "scripts": {
+    "clean": "trash '*.js'",
+    "coverage": "npm run test -- --coverage",
+    "coverage:watch": "npm run coverage -- --watch",
+    "lint": "tslint --type-check --project tsconfig.json",
+    "lint:fix": "npm run lint -- --fix",
+    "test": "jest",
+    "test:watch": "npm run test -- --watch",
+    "build": "npm run clean && tsc"
+  },
+  "dependencies": {
+    "awesome-typescript-loader": "^3.1.3",
+    "babili-webpack-plugin": "^0.0.11",
+    "copy-webpack-plugin": "^4.0.1",
+    "globule": "^1.1.0",
+    "webpack-node-externals": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/copy-webpack-plugin": "^4.0.0",
+    "@types/globule": "^1.1.3",
+    "@types/jest": "^19.2.2",
+    "@types/node": "^7.0.14",
+    "@types/webpack": "^2.2.15",
+    "eslint-config-jupl": "^0.5.6",
+    "jest": "^19.0.2",
+    "trash-cli": "^1.4.0",
+    "ts-jest": "^19.0.14",
+    "tslint": "^4.1.0",
+    "typescript": "^2.3.2",
+    "webpack": "^2.4.1"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts",
+      "tsx"
+    ],
+    "testRegex": "(/__tests__/.*|[./](test|spec))\\.tsx?$",
+    "testResultsProcessor": "<rootDir>/node_modules/ts-jest/coverageprocessor.js",
+    "transform": {
+      ".tsx?": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    }
+  }
+}
