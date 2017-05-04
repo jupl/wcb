@@ -4,6 +4,5 @@
 .gitignore
 .travis.yml
 coverage
-README.org
 yarn.lock
 !*.d.ts
