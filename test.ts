@@ -9,15 +9,16 @@ import {
 import {createConfig} from '.'
 
 const expectedConfig: Configuration = {
+  context: __dirname,
   entry: {
-    assets: ['assets.ts'],
-    base: ['base.ts'],
-    development: ['development.ts'],
-    hot: ['hot.ts'],
-    index: ['index.ts'],
-    node: ['node.ts'],
-    production: ['production.ts'],
-    util: ['util.ts'],
+    assets: ['./assets.ts'],
+    base: ['./base.ts'],
+    development: ['./development.ts'],
+    hot: ['./hot.ts'],
+    index: ['./index.ts'],
+    node: ['./node.ts'],
+    production: ['./production.ts'],
+    util: ['./util.ts'],
   },
   module: {
     rules: [
@@ -38,7 +39,7 @@ const expectedConfig: Configuration = {
   },
   output: {
     filename: '[name].js',
-    path: '',
+    path: __dirname,
     publicPath: '/',
   },
   plugins: [
@@ -119,14 +120,14 @@ test('Build with node and dotenv', () => {
   expect(config).toEqual({
     ...expectedConfig,
     entry: {
-      assets: ['dotenv/config', 'assets.ts'],
-      base: ['dotenv/config', 'base.ts'],
-      development: ['dotenv/config', 'development.ts'],
-      hot: ['dotenv/config', 'hot.ts'],
-      index: ['dotenv/config', 'index.ts'],
-      node: ['dotenv/config', 'node.ts'],
-      production: ['dotenv/config', 'production.ts'],
-      util: ['dotenv/config', 'util.ts'],
+      assets: ['dotenv/config', './assets.ts'],
+      base: ['dotenv/config', './base.ts'],
+      development: ['dotenv/config', './development.ts'],
+      hot: ['dotenv/config', './hot.ts'],
+      index: ['dotenv/config', './index.ts'],
+      node: ['dotenv/config', './node.ts'],
+      production: ['dotenv/config', './production.ts'],
+      util: ['dotenv/config', './util.ts'],
     },
     plugins: [
       new DefinePlugin({
@@ -148,14 +149,14 @@ test('Build with hot reload', () => {
   expect(createConfig({hotReload: true})).toEqual({
     ...expectedConfig,
     entry: {
-      assets: ['webpack-hot-middleware/client', 'assets.ts'],
-      base: ['webpack-hot-middleware/client', 'base.ts'],
-      development: ['webpack-hot-middleware/client', 'development.ts'],
-      hot: ['webpack-hot-middleware/client', 'hot.ts'],
-      index: ['webpack-hot-middleware/client', 'index.ts'],
-      node: ['webpack-hot-middleware/client', 'node.ts'],
-      production: ['webpack-hot-middleware/client', 'production.ts'],
-      util: ['webpack-hot-middleware/client', 'util.ts'],
+      assets: ['webpack-hot-middleware/client', './assets.ts'],
+      base: ['webpack-hot-middleware/client', './base.ts'],
+      development: ['webpack-hot-middleware/client', './development.ts'],
+      hot: ['webpack-hot-middleware/client', './hot.ts'],
+      index: ['webpack-hot-middleware/client', './index.ts'],
+      node: ['webpack-hot-middleware/client', './node.ts'],
+      production: ['webpack-hot-middleware/client', './production.ts'],
+      util: ['webpack-hot-middleware/client', './util.ts'],
     },
     module: {
       rules: [

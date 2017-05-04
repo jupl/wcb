@@ -39,6 +39,7 @@ export function createBase({
   useCache,
 }: Options): Configuration {
   return {
+    context: path.resolve(source),
     entry: entries(source, pattern),
     module: {
       rules: [
@@ -55,7 +56,7 @@ export function createBase({
       ],
     },
     output: {
-      path: destination,
+      path: path.resolve(destination),
       filename: '[name].js',
       publicPath: '/',
     },
@@ -88,9 +89,9 @@ export function createBase({
 function entries(source: string, pattern: string[]) {
   return find([...pattern, ...ignoreGlobs], {srcBase: source})
     .map(file => ({
-      file,
+      file: `./${file}`,
       base: path.basename(file, path.extname(file)),
-      dir: path.dirname(path.relative(path.resolve(source), file)),
+      dir: path.dirname(file),
     }))
     .reduce((obj, {base, dir, file}) => ({
       ...obj,
