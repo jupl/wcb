@@ -1,0 +1,10 @@
+{
+  "extneds": "./tsconfig",
+  "compilerOptions": {
+    "declaration": true,
+    "target": "es5"
+  },
+  "files": [
+    "index.ts"
+  ]
+}

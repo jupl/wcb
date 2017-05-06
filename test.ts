@@ -1,4 +1,5 @@
 import * as BabiliPlugin from 'babili-webpack-plugin'
+import {sep} from 'path'
 import {
   BannerPlugin,
   Configuration,
@@ -6,19 +7,14 @@ import {
   HotModuleReplacementPlugin,
   NoEmitOnErrorsPlugin,
 } from 'webpack'
-import {createConfig} from '.'
+import {addRules, createConfiguration} from '.'
+
+// tslint:disable:no-magic-numbers
 
 const expectedConfig: Configuration = {
   context: __dirname,
   entry: {
-    assets: ['./assets.ts'],
-    base: ['./base.ts'],
-    development: ['./development.ts'],
-    hot: ['./hot.ts'],
-    index: ['./index.ts'],
-    node: ['./node.ts'],
-    production: ['./production.ts'],
-    util: ['./util.ts'],
+    index: [`.${sep}index.ts`],
   },
   module: {
     rules: [
@@ -42,143 +38,151 @@ const expectedConfig: Configuration = {
     path: __dirname,
     publicPath: '/',
   },
-  plugins: [
-    new DefinePlugin({
-      'process.env.NODE_ENV': 'null',
-      'process.env.IS_CLIENT': '"true"',
-    }),
-  ],
   resolve: {
     extensions: ['.js', '.json', '.jsx', '.ts', '.tsx'],
   },
   target: 'web',
 }
 
-test('Build with no environment', () => {
-  expect(createConfig()).toEqual(expectedConfig)
-})
+describe('createConfig', () => {
+  let env
 
-test('Build with logging', () => {
-  expect(createConfig({log: true})).toEqual(expectedConfig)
-})
-
-test('Build with development environment', () => {
-  expect(createConfig({environment: 'development'})).toEqual({
-    ...expectedConfig,
-    devtool: 'inline-source-map',
+  beforeAll(() => {
+    env = process.env.NODE_ENV
+    delete process.env.NODE_ENV
   })
-})
 
-test('Build with production environment', () => {
-  const {
-    plugins: [definePlugin, ...plugins],
-    ...config,
-  } = createConfig({environment: 'production'})
-  expect({...config, plugins: [definePlugin]}).toEqual(expectedConfig)
-  expect(plugins).toHaveLength(2)
-  expect(plugins[1]).toEqual(new BabiliPlugin())
-})
+  afterAll(() => {
+    process.env.NODE_ENV = env
+  })
 
-test('Build with assets', () => {
-  const {
-    plugins: [definePlugin, ...plugins],
-    ...config,
-  } = createConfig({assets: ''})
-  expect({...config, plugins: [definePlugin]}).toEqual(expectedConfig)
-  expect(plugins).toHaveLength(1)
-})
-
-test('Build with invalid assets', () => {
-  expect(createConfig({assets: 'path/to/assets'})).toEqual(expectedConfig)
-})
-
-test('Build with node', () => {
-  const {externals, ...config} = createConfig({target: 'node'})
-  expect(config).toEqual({
-    ...expectedConfig,
-    plugins: [
+  it('should build with no environment', () => {
+    expect(createConfiguration()).toEqual({...expectedConfig, plugins: [
       new DefinePlugin({
-        'process.env.NODE_ENV': 'null',
-        'process.env.IS_CLIENT': '"false"',
+        'process.env.NODE_ENV': 'undefined',
+        'process.env.IS_CLIENT': '"true"',
       }),
-      new BannerPlugin({
-        banner: '#!/usr/bin/env node',
-        entryOnly: true,
-        raw: true,
-      }),
-    ],
-    target: 'node',
+    ]})
   })
-  expect(externals).toHaveLength(1)
-})
 
-test('Build with node and dotenv', () => {
-  const {
-    externals,
-    ...config,
-  } = createConfig({target: 'node', useDotEnv: true})
-  expect(config).toEqual({
-    ...expectedConfig,
-    entry: {
-      assets: ['dotenv/config', './assets.ts'],
-      base: ['dotenv/config', './base.ts'],
-      development: ['dotenv/config', './development.ts'],
-      hot: ['dotenv/config', './hot.ts'],
-      index: ['dotenv/config', './index.ts'],
-      node: ['dotenv/config', './node.ts'],
-      production: ['dotenv/config', './production.ts'],
-      util: ['dotenv/config', './util.ts'],
-    },
-    plugins: [
-      new DefinePlugin({
-        'process.env.NODE_ENV': 'null',
-        'process.env.IS_CLIENT': '"false"',
-      }),
-      new BannerPlugin({
-        banner: '#!/usr/bin/env node',
-        entryOnly: true,
-        raw: true,
-      }),
-    ],
-    target: 'node',
-  })
-  expect(externals).toHaveLength(1)
-})
-
-test('Build with hot reload', () => {
-  expect(createConfig({hotReload: true})).toEqual({
-    ...expectedConfig,
-    entry: {
-      assets: ['webpack-hot-middleware/client', './assets.ts'],
-      base: ['webpack-hot-middleware/client', './base.ts'],
-      development: ['webpack-hot-middleware/client', './development.ts'],
-      hot: ['webpack-hot-middleware/client', './hot.ts'],
-      index: ['webpack-hot-middleware/client', './index.ts'],
-      node: ['webpack-hot-middleware/client', './node.ts'],
-      production: ['webpack-hot-middleware/client', './production.ts'],
-      util: ['webpack-hot-middleware/client', './util.ts'],
-    },
-    module: {
-      rules: [
-        {
-          exclude: /node_modules/,
-          test: /\.[jt]sx?$/,
-          use: [
-            {
-              loader: 'awesome-typescript-loader',
-              options: {
-                useBabel: false,
-                useCache: true,
-              },
-            },
-          ],
-        },
+  it('should build with development environment', () => {
+    expect(createConfiguration({environment: 'development'})).toEqual({
+      ...expectedConfig,
+      plugins: [
+        new DefinePlugin({
+          'process.env.NODE_ENV': '"development"',
+          'process.env.IS_CLIENT': '"true"',
+        }),
       ],
-    },
-    plugins: [
-      ...expectedConfig.plugins,
-      new HotModuleReplacementPlugin(),
-      new NoEmitOnErrorsPlugin(),
+      devtool: 'inline-source-map',
+    })
+  })
+
+  it('should build with production environment', () => {
+    const {plugins, ...config} = createConfiguration({
+      environment: 'production',
+    })
+    expect(config).toEqual(expectedConfig)
+    expect(plugins).toHaveLength(3)
+    expect(plugins).toEqual(expect.arrayContaining([
+      new DefinePlugin({
+        'process.env.NODE_ENV': '"production"',
+        'process.env.IS_CLIENT': '"true"',
+      }),
+      new BabiliPlugin(),
+    ]))
+  })
+
+  it('should build with assets', () => {
+    const {plugins, ...config} = createConfiguration({assets: ''})
+    expect(config).toEqual(expectedConfig)
+    expect(plugins).toHaveLength(2)
+    expect(plugins).toEqual(expect.arrayContaining([
+      new DefinePlugin({
+        'process.env.NODE_ENV': 'undefined',
+        'process.env.IS_CLIENT': '"true"',
+      }),
+    ]))
+  })
+
+  it('should build with invalid assets', () => {
+    expect(createConfiguration({assets: 'path/to/assets'})).toEqual({
+      ...expectedConfig,
+      plugins: [
+        new DefinePlugin({
+          'process.env.NODE_ENV': 'undefined',
+          'process.env.IS_CLIENT': '"true"',
+        }),
+      ],
+    })
+  })
+
+  it('should build with node', () => {
+    const {externals, ...config} = createConfiguration({target: 'node'})
+    expect(config).toEqual({
+      ...expectedConfig,
+      plugins: [
+        new DefinePlugin({
+          'process.env.NODE_ENV': 'undefined',
+          'process.env.IS_CLIENT': '"false"',
+        }),
+        new BannerPlugin({
+          banner: '#!/usr/bin/env node',
+          entryOnly: true,
+          raw: true,
+        }),
+      ],
+      target: 'node',
+    })
+    expect(externals).toHaveLength(1)
+  })
+
+  it('should build with hot reload', () => {
+    expect(createConfiguration({hotReload: true})).toEqual({
+      ...expectedConfig,
+      entry: {
+        index: ['webpack-hot-middleware/client', `.${sep}index.ts`],
+      },
+      module: {
+        rules: [
+          {
+            exclude: /node_modules/,
+            test: /\.[jt]sx?$/,
+            use: [
+              {
+                loader: 'awesome-typescript-loader',
+                options: {
+                  useBabel: false,
+                  useCache: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      plugins: [
+        new DefinePlugin({
+          'process.env.NODE_ENV': 'undefined',
+          'process.env.IS_CLIENT': '"true"',
+        }),
+        new HotModuleReplacementPlugin(),
+        new NoEmitOnErrorsPlugin(),
+      ],
+    })
+  })
+})
+
+test('addRules', () => {
+  const configuration = createConfiguration()
+  const {module} = addRules(configuration, [
+    {test: /\.css$/, use: ['style-loader', 'css-loader']},
+    {test: /\.(gif|jpg|jpeg|png|svg)$/, use: ['file-loader']},
+  ])
+  expect(module).toEqual({
+    rules: [
+      ...configuration.module.rules,
+      {test: /\.css$/, use: ['style-loader', 'css-loader']},
+      {test: /\.(gif|jpg|jpeg|png|svg)$/, use: ['file-loader']},
     ],
   })
 })
