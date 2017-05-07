@@ -8,14 +8,14 @@ import {
   BannerPlugin,
   Configuration as WebpackConfiguration,
   DefinePlugin,
-  LoaderOptionsPlugin,
   HotModuleReplacementPlugin,
+  LoaderOptionsPlugin,
   NewModule,
   NewResolve,
   NoEmitOnErrorsPlugin,
   Output as WebpackOutput,
-  Rule,
   Plugin,
+  Rule,
 } from 'webpack'
 import * as nodeExternals from 'webpack-node-externals'
 
