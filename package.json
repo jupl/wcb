@@ -17,7 +17,7 @@
     "clean": "trash '*.js' '*.d.ts'",
     "coverage": "npm run test -- --coverage",
     "coverage:watch": "npm run coverage -- --watch",
-    "codecov": "npm run coverage && trash 'coverage/*' '!coverage/remapped' && codecov",
+    "codecov": "npm run coverage && codecov",
     "lint": "tslint --type-check --project tsconfig.json",
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run clean && jest",
@@ -41,12 +41,13 @@
     "eslint-config-jupl": "^0.6.0",
     "jest": "^20.0.0",
     "trash-cli": "^1.4.0",
-    "ts-jest": "^19.0.14",
+    "ts-jest": "^20.0.0",
     "tslint": "^5.2.0",
     "typescript": "^2.3.2",
     "webpack": "^2.4.1"
   },
   "jest": {
+    "mapCoverage": true,
     "moduleFileExtensions": [
       "js",
       "json",
@@ -54,7 +55,6 @@
       "tsx"
     ],
     "testRegex": "(/__tests__/.*|[./](test|spec))\\.tsx?$",
-    "testResultsProcessor": "<rootDir>/node_modules/ts-jest/coverageprocessor.js",
     "transform": {
       ".tsx?": "<rootDir>/node_modules/ts-jest/preprocessor.js"
     }
