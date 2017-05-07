@@ -1,3 +1,6 @@
 {
-  "extends": "eslint-config-jupl/ts"
+  "extends": "eslint-config-jupl/ts",
+  "rules": {
+    "no-unsafe-any": true
+  }
 }

@@ -108,11 +108,12 @@ export interface Options {
  * @return Webpack configuration
  */
 export function createConfiguration(options: Options = {}): Configuration {
-  // Read options
   const {
     assets,
     destination = '',
-    environment = process.env.NODE_ENV,
+    environment = process.env.NODE_ENV != undefined
+      ? String(process.env.NODE_ENV)
+      : undefined,
     hotReload = process.env.HOT_MODULES === 'true',
     log = noop,
     pattern = ['**/*.ts{,x}'],
@@ -157,8 +158,10 @@ export function createConfiguration(options: Options = {}): Configuration {
     },
     plugins: [
       new DefinePlugin({
-        'process.env.NODE_ENV': JSON.stringify(environment) || 'undefined',
         'process.env.IS_CLIENT': JSON.stringify(String(webTarget)),
+        'process.env.NODE_ENV': environment !== undefined
+          ? JSON.stringify(environment)
+          : 'undefined',
       }),
     ],
     resolve: {
@@ -189,7 +192,8 @@ export function createConfiguration(options: Options = {}): Configuration {
       plugins: [
         ...configuration.plugins,
         new LoaderOptionsPlugin({minimize: true, debug: false}),
-        new (BabiliPlugin as any)(), // tslint:disable-line:no-any
+        // tslint:disable-next-line:no-any no-unsafe-any
+        new (BabiliPlugin as any)(),
       ],
     }
     log('--- wcb: adding production configuration')
@@ -199,7 +203,7 @@ export function createConfiguration(options: Options = {}): Configuration {
   }
 
   // Include assets if specified
-  if(assets || assets === '') {
+  if(assets !== undefined || assets === '') {
     try {
       const from = resolve(assets)
       accessSync(from, F_OK)
@@ -290,7 +294,6 @@ export function addToEntries(
   }
 }
 
-/** Do nothing */
 function noop() {
   // Do nothing
 }
