@@ -115,7 +115,7 @@ export function createConfiguration(options: Options = {}): Configuration {
       ? String(process.env.NODE_ENV)
       : undefined,
     hotReload = process.env.HOT_MODULES === 'true',
-    log = noop,
+    log = () => undefined,
     pattern = ['**/*.ts{,x}'],
     source = '',
     target = 'web',
@@ -203,7 +203,7 @@ export function createConfiguration(options: Options = {}): Configuration {
   }
 
   // Include assets if specified
-  if(assets !== undefined || assets === '') {
+  if(assets !== undefined) {
     try {
       const from = resolve(assets)
       accessSync(from, F_OK)
@@ -233,7 +233,9 @@ export function createConfiguration(options: Options = {}): Configuration {
           raw: true,
         }),
       ],
-      externals: [nodeExternals()],
+      externals: [
+        nodeExternals({whitelist: [/\.(?!(?:jsx?|json)$).{1,5}$/i]}),
+      ],
     }
     log('--- wcb: adding node configuration')
   }
@@ -292,8 +294,4 @@ export function addToEntries(
         [key]: [...modules, ...configuration.entry[key]],
       }), {}),
   }
-}
-
-function noop() {
-  // Do nothing
 }
