@@ -5,7 +5,6 @@ import {accessSync} from 'fs'
 import {find} from 'globule'
 import {basename, dirname, extname, join, resolve, sep} from 'path'
 import {
-  BannerPlugin,
   Configuration as WebpackConfiguration,
   DefinePlugin,
   HotModuleReplacementPlugin,
@@ -225,14 +224,6 @@ export function createConfiguration(options: Options = {}): Configuration {
   if(!webTarget) {
     configuration = {
       ...configuration,
-      plugins: [
-        ...configuration.plugins,
-        new BannerPlugin({
-          banner: '#!/usr/bin/env node',
-          entryOnly: true,
-          raw: true,
-        }),
-      ],
       externals: [
         nodeExternals({whitelist: [/\.(?!(?:jsx?|json)$).{1,5}$/i]}),
       ],

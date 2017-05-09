@@ -1,7 +1,6 @@
 import * as BabiliPlugin from 'babili-webpack-plugin'
 import {sep} from 'path'
 import {
-  BannerPlugin,
   Configuration,
   DefinePlugin,
   HotModuleReplacementPlugin,
@@ -125,11 +124,6 @@ describe('createConfig', () => {
         new DefinePlugin({
           'process.env.NODE_ENV': 'undefined',
           'process.env.IS_CLIENT': '"false"',
-        }),
-        new BannerPlugin({
-          banner: '#!/usr/bin/env node',
-          entryOnly: true,
-          raw: true,
         }),
       ],
       target: 'node',
