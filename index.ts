@@ -26,6 +26,9 @@ const ignoreGlobs = [
   '!**/{,*.}{test,spec}.*',
 ]
 
+// Targets that should not use node configuration
+const nonNodeTargets = ['web', 'webworker', 'electron-renderer']
+
 /** Webpack entries */
 export interface Entry {
   /** Each entry is a list of modules */
@@ -123,7 +126,7 @@ export function createConfiguration(options: Options = {}): Configuration {
   const {assetsIgnore: ignore = pattern} = options
 
   // Create base configuration
-  const webTarget = target === 'web' || target === 'webworker'
+  const nodeTarget = nonNodeTargets.indexOf(target) === -1
   let configuration: Readonly<Configuration> = {
     context: resolve(source),
     entry: find([...pattern, ...ignoreGlobs], {srcBase: source})
@@ -157,7 +160,7 @@ export function createConfiguration(options: Options = {}): Configuration {
     },
     plugins: [
       new DefinePlugin({
-        'process.env.IS_CLIENT': JSON.stringify(String(webTarget)),
+        'process.env.IS_CLIENT': JSON.stringify(String(!nodeTarget)),
         'process.env.NODE_ENV': environment !== undefined
           ? JSON.stringify(environment)
           : 'undefined',
@@ -221,12 +224,10 @@ export function createConfiguration(options: Options = {}): Configuration {
   }
 
   // Set up Node specifics if applicable
-  if(!webTarget) {
+  if(nodeTarget) {
     configuration = {
       ...configuration,
-      externals: [
-        nodeExternals({whitelist: [/\.(?!(?:jsx?|json)$).{1,5}$/i]}),
-      ],
+      externals: [nodeExternals()],
     }
     log('--- wcb: adding node configuration')
   }
