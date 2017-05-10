@@ -164,6 +164,7 @@ export function createConfiguration(options: Options = {}): Configuration {
         'process.env.NODE_ENV': environment !== undefined
           ? JSON.stringify(environment)
           : 'undefined',
+        'process.env.WEBPACK_BUILD': '"true"',
       }),
     ],
     resolve: {

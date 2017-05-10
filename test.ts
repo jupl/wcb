@@ -60,6 +60,7 @@ describe('createConfig', () => {
       new DefinePlugin({
         'process.env.NODE_ENV': 'undefined',
         'process.env.IS_CLIENT': '"true"',
+        'process.env.WEBPACK_BUILD': '"true"',
       }),
     ]})
   })
@@ -71,6 +72,7 @@ describe('createConfig', () => {
         new DefinePlugin({
           'process.env.NODE_ENV': '"development"',
           'process.env.IS_CLIENT': '"true"',
+          'process.env.WEBPACK_BUILD': '"true"',
         }),
       ],
       devtool: 'inline-source-map',
@@ -87,6 +89,7 @@ describe('createConfig', () => {
       new DefinePlugin({
         'process.env.NODE_ENV': '"production"',
         'process.env.IS_CLIENT': '"true"',
+        'process.env.WEBPACK_BUILD': '"true"',
       }),
       new BabiliPlugin(),
     ]))
@@ -100,6 +103,7 @@ describe('createConfig', () => {
       new DefinePlugin({
         'process.env.NODE_ENV': 'undefined',
         'process.env.IS_CLIENT': '"true"',
+        'process.env.WEBPACK_BUILD': '"true"',
       }),
     ]))
   })
@@ -111,6 +115,7 @@ describe('createConfig', () => {
         new DefinePlugin({
           'process.env.NODE_ENV': 'undefined',
           'process.env.IS_CLIENT': '"true"',
+          'process.env.WEBPACK_BUILD': '"true"',
         }),
       ],
     })
@@ -124,6 +129,7 @@ describe('createConfig', () => {
         new DefinePlugin({
           'process.env.NODE_ENV': 'undefined',
           'process.env.IS_CLIENT': '"false"',
+          'process.env.WEBPACK_BUILD': '"true"',
         }),
       ],
       target: 'node',
@@ -158,6 +164,7 @@ describe('createConfig', () => {
         new DefinePlugin({
           'process.env.NODE_ENV': 'undefined',
           'process.env.IS_CLIENT': '"true"',
+          'process.env.WEBPACK_BUILD': '"true"',
         }),
         new HotModuleReplacementPlugin(),
         new NoEmitOnErrorsPlugin(),
