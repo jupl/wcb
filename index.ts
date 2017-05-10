@@ -229,6 +229,14 @@ export function createConfiguration(options: Options = {}): Configuration {
     configuration = {
       ...configuration,
       externals: [nodeExternals()],
+      node: {
+        __dirname: false,
+        __filename: false,
+        global: false,
+        process: false,
+        Buffer: false,
+        setImmediate: false,
+      },
     }
     log('--- wcb: adding node configuration')
   }

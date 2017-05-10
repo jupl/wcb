@@ -132,6 +132,14 @@ describe('createConfig', () => {
           'process.env.WEBPACK_BUILD': '"true"',
         }),
       ],
+      node: {
+        __dirname: false,
+        __filename: false,
+        global: false,
+        process: false,
+        Buffer: false,
+        setImmediate: false,
+      },
       target: 'node',
     })
     expect(externals).toHaveLength(1)
