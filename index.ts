@@ -18,15 +18,12 @@ import {
 } from 'webpack'
 import * as nodeExternals from 'webpack-node-externals'
 
-// Patterns to ignore in entries
 const ignoreGlobs = [
   '!**/node_modules/**',
   '!**/*.d.ts',
   '!**/__tests__/**',
   '!**/{,*.}{test,spec}.*',
 ]
-
-// Targets that should not use node configuration
 const nonNodeTargets = ['web', 'webworker', 'electron-renderer']
 
 /** Webpack entries */
@@ -226,9 +223,11 @@ export function createConfiguration(options: Options = {}): Configuration {
 
   // Set up Node specifics if applicable
   if(nodeTarget) {
+    configuration = {...configuration, externals: [nodeExternals()]}
+  }
+  if(nodeTarget || target === 'electron-renderer') {
     configuration = {
       ...configuration,
-      externals: [nodeExternals()],
       node: {
         __dirname: false,
         __filename: false,
