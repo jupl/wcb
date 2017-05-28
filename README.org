@@ -5,4 +5,62 @@
 [[https://david-dm.org/jupl/wcb?type=dev][file:https://img.shields.io/david/dev/jupl/wcb.svg?style=flat-square]]
 
 ** About
-Personal Webpack config builder.
+Personal [[https://webpack.js.org/][Webpack]] config builder, targeted specifically for [[https://www.typescriptlang.org/][TypeScript]].
+
+** Installation
+#+BEGIN_EXAMPLE
+npm install typescript wcb webpack
+npm install babel-core # Required if using useBabel option below
+#+END_EXAMPLE
+
+** Usage
+#+BEGIN_SRC typescript
+import {addToEntries, createConfiguration} from 'wcb'
+const base = createConfiguration()
+const tweaked = createConfiguration({
+  source: 'src',
+  destination: 'dist',
+  assets: 'assets',
+})
+const extra = addToEntries(createConfiguration({common: true}), [
+  'react-hot-loader/patch',
+])
+
+// webpack.config.ts
+import {createConfiguration} from 'wcb'
+export default createConfiguration()
+#+END_SRC
+
+** API
+*** ~createConfiguration(options?: Options): Configuration~
+Create a [[https://webpack.js.org/concepts/configuration/][Webpack configuration]] which can be used by a =webpack.config= file.
+*** ~addPlugins(configuration: Configuration, plugins: Plugin[]): Configuration~
+Given an existing configuration from ~createConfiguration~, add [[https://webpack.js.org/concepts/plugins/][Webpack plugins]] easily. Please note that this will return a new configuration and does *not* modify the given configuration.
+*** ~addRules(configuration: Configuration, rules: Rule[]): Configuration~
+Given an existing configuration from ~createConfiguration~, add [[https://webpack.js.org/concepts/loaders/][Webpack rules for loaders]] easily. Please note that this will return a new configuration and does *not* modify the given configuration.
+*** ~addToEntries(configuration: Configuration, modules: string[]): Configuration~
+Given an existing configuration from ~createConfiguration~, load additional Node files to each entry. Please note that this will return a new configuration and does *not* modify the given configuration.
+
+** Options
+*** ~assets?: string~
+Path that contains static files to copy over to the final build. If path is relative, it is relative to ~process.cwd()~. If not specified no static files are copied over.
+*** ~assetsIgnore: string[] = pattern~
+Glob patterns indicating files to ignore when using the ~assets~ option. By default it uses the ~pattern~ option.
+*** ~common: string | boolean = false~
+If enabled then a single file containing [[https://webpack.js.org/plugins/commons-chunk-plugin/][common code across multiple entry points]] will be included. This option is only use if a non-Node ~target~ is chosen and there are multiple entries to build. If value is ~true~ then name of file is called "common", whereas a string value allows a custom filename.
+*** ~destination: string = process.cwd()~
+Path where generated JS files will be placed in final build. If path is relative, it is relative to ~process.cwd()~.
+*** ~environment: string = process.env.NODE_ENV~
+Environment to build under. Currently "development" and "production" is supported.
+*** ~hotReload: boolean = false~
+If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled.
+*** ~log?: (message: string) => void~
+If a function is provided it will be called for logging.
+*** ~pattern: string[] = ['**/*.ts{,x}']~
+Glob patterns to pick up as entry points relative to ~source~.
+*** ~source: string = process.cwd()~
+Path where source files will be used for building. If path is relative, it is relative to ~process.cwd()~.
+*** ~target: string = 'web'~
+[[https://webpack.js.org/configuration/target/][Webpack targets]] to build to.
+*** ~useBabel: boolean = false~
+If enabled then post-process files with Babel as per [[https://github.com/s-panferov/awesome-typescript-loader][awesome-typescript-loader]].

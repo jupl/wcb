@@ -78,7 +78,7 @@ export interface Options {
   /** If true then hot reload (defaults to HOT_RELOAD === 'true') */
   hotReload?: boolean
   /** Log function */
-  log?(message: String): void
+  log?(message: string): void
   /** Glob patterns to match (defaults to all TS files recursively) */
   pattern?: string[]
   /** Path that contains source files (defaults to working path) */
