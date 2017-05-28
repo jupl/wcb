@@ -52,7 +52,7 @@ If enabled then a single file containing [[https://webpack.js.org/plugins/common
 Path where generated JS files will be placed in final build. If path is relative, it is relative to ~process.cwd()~.
 *** ~environment: string = process.env.NODE_ENV~
 Environment to build under. Currently "development" and "production" is supported.
-*** ~hotReload: boolean = false~
+*** ~hotReload: boolean = process.env.HOT_MODULES === 'true'~
 If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled.
 *** ~log?: (message: string) => void~
 If a function is provided it will be called for logging.
