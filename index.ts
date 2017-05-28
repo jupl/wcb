@@ -70,10 +70,10 @@ export interface Configuration extends WebpackConfiguration {
 
 /** Options for webpack build */
 export interface Options {
-  /** Path that contains static assets (default is no static assets) */
+  /** Path that contains static assets (defaults to no static assets) */
   assets?: string
 
-  /** Asset files to ignore when copying (default is pattern parameter) */
+  /** Asset files to ignore when copying (defaults to pattern parameter) */
   assetsIgnore?: string[]
 
   /** Path to write output to (defaults to working path) */
@@ -164,15 +164,7 @@ export function createConfiguration(options: Options = {}): Configuration {
         'process.env.WEBPACK_BUILD': '"true"',
       }),
     ],
-    resolve: {
-      extensions: [
-        '.js',
-        '.json',
-        '.jsx',
-        '.ts',
-        '.tsx',
-      ],
-    },
+    resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
     target,
   }
   log('--- wcb: making base configuration')
@@ -180,22 +172,15 @@ export function createConfiguration(options: Options = {}): Configuration {
   // Add to configuration based on environment
   switch(environment) {
   case 'development':
-    configuration = {
-      ...configuration,
-      devtool: 'inline-source-map',
-    }
+    configuration = {...configuration, devtool: 'inline-source-map'}
     log('--- wcb: adding development configuration')
     break
   case 'production':
-    configuration = {
-      ...configuration,
-      plugins: [
-        ...configuration.plugins,
-        new LoaderOptionsPlugin({minimize: true, debug: false}),
-        // tslint:disable-next-line:no-any no-unsafe-any
-        new (BabiliPlugin as any)(),
-      ],
-    }
+    configuration = addPlugins(configuration, [
+      new LoaderOptionsPlugin({minimize: true, debug: false}),
+      // tslint:disable-next-line:no-any no-unsafe-any
+      new (BabiliPlugin as any)(),
+    ])
     log('--- wcb: adding production configuration')
     break
   default:
@@ -207,13 +192,9 @@ export function createConfiguration(options: Options = {}): Configuration {
     try {
       const from = resolve(assets)
       accessSync(from, F_OK)
-      configuration = {
-        ...configuration,
-        plugins: [
-          ...configuration.plugins,
-          new CopyPlugin([{from, ignore}]),
-        ],
-      }
+      configuration = addPlugins(configuration, [
+        new CopyPlugin([{from, ignore}]),
+      ])
       log('--- wcb: adding assets configuration')
     }
     catch(e) {
@@ -242,14 +223,10 @@ export function createConfiguration(options: Options = {}): Configuration {
 
   // Add hot reload support if specified
   if(hotReload) {
-    configuration = {
-      ...addToEntries(configuration, ['webpack-hot-middleware/client']),
-      plugins: [
-        ...configuration.plugins,
-        new HotModuleReplacementPlugin(),
-        new NoEmitOnErrorsPlugin(),
-      ],
-    }
+    configuration = addToEntries(addPlugins(configuration, [
+      new HotModuleReplacementPlugin(),
+      new NoEmitOnErrorsPlugin(),
+    ]), ['webpack-hot-middleware/client'])
     log('--- wcb: adding hot modules configuration')
   }
 
@@ -257,9 +234,22 @@ export function createConfiguration(options: Options = {}): Configuration {
 }
 
 /**
+ * Add plugins to Webpack configuration
+ * @param configuration Configuration to update
+ * @param plugins Plugins to add
+ * @return Updated configuration
+ */
+export function addPlugins(
+  configuration: Configuration,
+  plugins: Plugin[],
+): Configuration {
+  return {...configuration, plugins: [...configuration.plugins, ...plugins]}
+}
+
+/**
  * Add rules to Webpack configuration
  * @param configuration Configuration to update
- * @param rulesToAdd Rules to add
+ * @param rules Rules to add
  * @return Updated configuration
  */
 export function addRules(
@@ -278,7 +268,7 @@ export function addRules(
 /**
  * Add modules for each entry to Webpack configuration
  * @param configuration Configuration to update
- * @param modulesToAdd Modules to add
+ * @param modules Modules to add
  * @return Updated configuration
  */
 export function addToEntries(
