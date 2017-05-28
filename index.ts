@@ -37,10 +37,8 @@ export interface Entry {
 export interface Output extends WebpackOutput {
   /** Path is provided */
   path: string
-
   /** Filename is provided */
   filename: string
-
   /** Public path is provided */
   publicPath: string
 }
@@ -55,16 +53,12 @@ export interface Resolve extends NewResolve {
 export interface Configuration extends WebpackConfiguration {
   /** Entries must be an object to list of modules */
   entry: Entry
-
   /** Module follows Webpack 2 format */
   module: NewModule
-
   /** Output is provided */
   output: Output
-
   /** Plugins are specified */
   plugins: Plugin[]
-
   /** Resolve options are specified */
   resolve: Resolve
 }
@@ -73,34 +67,24 @@ export interface Configuration extends WebpackConfiguration {
 export interface Options {
   /** Path that contains static assets (defaults to no static assets) */
   assets?: string
-
   /** Asset files to ignore when copying (defaults to pattern parameter) */
   assetsIgnore?: string[]
-
   /** Create a simple common chunk if multiple entries (defaults to false) */
-  common?: boolean
-
+  common?: string | boolean
   /** Path to write output to (defaults to working path) */
   destination?: string
-
   /** Environment to run under (defaults to NODE_ENV) */
   environment?: string
-
   /** If true then hot reload (defaults to HOT_RELOAD === 'true') */
   hotReload?: boolean
-
   /** Log function */
   log?(message: String): void
-
   /** Glob patterns to match (defaults to all TS files recursively) */
   pattern?: string[]
-
   /** Path that contains source files (defaults to working path) */
   source?: string
-
   /** Webpack target (defaults to web) */
   target?: string
-
   /** If true then use Babel (defaults to false) */
   useBabel?: boolean
 }
@@ -227,9 +211,13 @@ export function createConfiguration(options: Options = {}): Configuration {
   }
 
   // Set up client specifics if applicable
-  if(!nodeTarget && common && Object.keys(configuration.entry).length > 1) {
+  if(!nodeTarget
+     && common !== false
+     && Object.keys(configuration.entry).length > 1) {
     configuration = addPlugins(configuration, [
-      new optimize.CommonsChunkPlugin({name: 'common'}),
+      new optimize.CommonsChunkPlugin({
+        name: common === true ? 'common' : common,
+      }),
     ])
   }
 

@@ -5,6 +5,7 @@ import {
   DefinePlugin,
   HotModuleReplacementPlugin,
   NoEmitOnErrorsPlugin,
+  optimize,
 } from 'webpack'
 import {addRules, createConfiguration} from '.'
 
@@ -13,6 +14,7 @@ import {addRules, createConfiguration} from '.'
 const expectedConfig: Configuration = {
   context: __dirname,
   entry: {
+    extra: [`.${sep}extra.ts`],
     index: [`.${sep}index.ts`],
   },
   module: {
@@ -145,10 +147,22 @@ describe('createConfig', () => {
     expect(externals).toHaveLength(1)
   })
 
+  it('should build with common chunks', () => {
+    const {plugins: plugins1, ...config1} = createConfiguration({common: true})
+    const {plugins: plugins2, ...config2} = createConfiguration({
+      common: 'shared',
+    })
+    expect(config1).toEqual(expectedConfig)
+    expect(config2).toEqual(expectedConfig)
+    expect(plugins1).toHaveLength(2)
+    expect(plugins2).toHaveLength(2)
+  })
+
   it('should build with hot reload', () => {
     expect(createConfiguration({hotReload: true})).toEqual({
       ...expectedConfig,
       entry: {
+        extra: ['webpack-hot-middleware/client', `.${sep}extra.ts`],
         index: ['webpack-hot-middleware/client', `.${sep}index.ts`],
       },
       module: {
