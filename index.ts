@@ -15,6 +15,7 @@ import {
   Output as WebpackOutput,
   Plugin,
   Rule,
+  optimize,
 } from 'webpack'
 import * as nodeExternals from 'webpack-node-externals'
 
@@ -76,6 +77,9 @@ export interface Options {
   /** Asset files to ignore when copying (defaults to pattern parameter) */
   assetsIgnore?: string[]
 
+  /** Create a simple common chunk if multiple entries (defaults to false) */
+  common?: boolean
+
   /** Path to write output to (defaults to working path) */
   destination?: string
 
@@ -109,6 +113,7 @@ export interface Options {
 export function createConfiguration(options: Options = {}): Configuration {
   const {
     assets,
+    common = false,
     destination = '',
     environment = process.env.NODE_ENV != undefined
       ? String(process.env.NODE_ENV)
@@ -219,6 +224,13 @@ export function createConfiguration(options: Options = {}): Configuration {
       },
     }
     log('--- wcb: adding node configuration')
+  }
+
+  // Set up client specifics if applicable
+  if(!nodeTarget && common && Object.keys(configuration.entry).length > 1) {
+    configuration = addPlugins(configuration, [
+      new optimize.CommonsChunkPlugin({name: 'common'}),
+    ])
   }
 
   // Add hot reload support if specified
