@@ -1,6 +1,7 @@
 import * as BabiliPlugin from 'babili-webpack-plugin'
 import {F_OK} from 'constants'
 import * as CopyPlugin from 'copy-webpack-plugin'
+import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {accessSync} from 'fs'
 import {find} from 'globule'
 import {basename, dirname, extname, join, resolve, sep} from 'path'
@@ -8,9 +9,11 @@ import {
   Configuration as WebpackConfiguration,
   DefinePlugin,
   HotModuleReplacementPlugin,
+  Loader,
   LoaderOptionsPlugin,
   NewModule,
   NewResolve,
+  NewUseRule,
   NoEmitOnErrorsPlugin,
   Output as WebpackOutput,
   Plugin,
@@ -63,6 +66,12 @@ export interface Configuration extends WebpackConfiguration {
   resolve: Resolve
 }
 
+/** Webpack loader for CSS family files */
+export interface CSSLoader extends NewUseRule {
+  /** Use must be a list of loaders */
+  use: Loader[]
+}
+
 /** Options for webpack build */
 export interface Options {
   /** Path that contains static assets (defaults to no static assets) */
@@ -71,6 +80,8 @@ export interface Options {
   assetsIgnore?: string[]
   /** Create a simple common chunk if multiple entries (defaults to false) */
   common?: string | boolean
+  /** CSS loaders */
+  cssLoaders?: CSSLoader[]
   /** Path to write output to (defaults to working path) */
   destination?: string
   /** Environment to run under (defaults to NODE_ENV) */
@@ -98,6 +109,7 @@ export function createConfiguration(options: Options = {}): Configuration {
   const {
     assets,
     common = false,
+    cssLoaders = [],
     destination = '',
     environment = process.env.NODE_ENV != undefined
       ? String(process.env.NODE_ENV)
@@ -210,15 +222,25 @@ export function createConfiguration(options: Options = {}): Configuration {
     log('--- wcb: adding node configuration')
   }
 
-  // Set up client specifics if applicable
-  if(!nodeTarget
-     && common !== false
-     && Object.keys(configuration.entry).length > 1) {
+  // Set up common chunk if applicable
+  if(common !== false && Object.keys(configuration.entry).length > 1) {
     configuration = addPlugins(configuration, [
       new optimize.CommonsChunkPlugin({
         name: common === true ? 'common' : common,
       }),
     ])
+  }
+
+  // Set up CSS loaders if applicable
+  if(cssLoaders.length > 0) {
+    configuration = addRules(addPlugins(configuration, [
+      new ExtractTextPlugin('[name].css'),
+    ]), cssLoaders.map(({use, ...rule}) => ({
+      ...rule,
+      use: hotReload
+        ? ['style-loader', ...use]
+        : ExtractTextPlugin.extract({use, fallback: 'style-loader'}),
+    })))
   }
 
   // Add hot reload support if specified

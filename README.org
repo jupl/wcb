@@ -22,7 +22,10 @@ const tweaked = createConfiguration({
   destination: 'dist',
   assets: 'assets',
 })
-const extra = addToEntries(createConfiguration({common: true}), [
+const extra = addToEntries(createConfiguration({
+  common: true,
+  cssLoaders: [{test: /\.css$/, use: ['css-loader']],
+}), [
   'react-hot-loader/patch',
 ])
 
@@ -46,6 +49,8 @@ Given an existing configuration from ~createConfiguration~, load additional Node
 Path that contains static files to copy over to the final build. If path is relative, it is relative to ~process.cwd()~. If not specified no static files are copied over.
 *** ~assetsIgnore: string[] = pattern~
 Glob patterns indicating files to ignore when using the ~assets~ option. By default it uses the ~pattern~ option.
+*** ~cssLoaders: Loader[] = []~
+List of CSS [[https://webpack.js.org/configuration/module/#rule][loaders]] to incorporate. =extract-text-webpack-plugin= is used by default, whereas =style-loader= is used for hot reloading. Do *NOT* use =extract-text-webpack-plugin= nor =style-loader= as it will automatically be included.
 *** ~common: string | boolean = false~
 If enabled then a single file containing [[https://webpack.js.org/plugins/commons-chunk-plugin/][common code across multiple entry points]] will be included. This option is only use if a non-Node ~target~ is chosen and there are multiple entries to build. If value is ~true~ then name of file is called "common", whereas a string value allows a custom filename.
 *** ~destination: string = process.cwd()~

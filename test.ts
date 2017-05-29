@@ -1,4 +1,5 @@
 import * as BabiliPlugin from 'babili-webpack-plugin'
+import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {sep} from 'path'
 import {
   Configuration,
@@ -7,7 +8,7 @@ import {
   NoEmitOnErrorsPlugin,
   optimize,
 } from 'webpack'
-import {addRules, createConfiguration} from '.'
+import {CSSLoader, addRules, createConfiguration} from '.'
 
 // tslint:disable:no-magic-numbers
 
@@ -156,6 +157,69 @@ describe('createConfig', () => {
     expect(config2).toEqual(expectedConfig)
     expect(plugins1).toHaveLength(2)
     expect(plugins2).toHaveLength(2)
+  })
+
+  it('should build with CSS loaders', () => {
+    const cssLoaders: CSSLoader[] = [
+      {test: /\.css$/, use: ['css-loader']},
+      {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
+    ]
+    const config1 = createConfiguration({cssLoaders})
+    const config2 = createConfiguration({cssLoaders, hotReload: true})
+    expect(config1.module.rules).toEqual([
+      {
+        exclude: /node_modules/,
+        test: /\.[jt]sx?$/,
+        use: [
+          {
+            loader: 'awesome-typescript-loader',
+            options: {
+              useBabel: false,
+              useCache: false,
+            },
+          },
+        ],
+      },
+      {
+        test: /\.css$/,
+        use: ExtractTextPlugin.extract({
+          use: ['css-loader'],
+          fallback: 'style-loader',
+        }),
+      },
+      {
+        test: /\.scss$/,
+        use: ExtractTextPlugin.extract({
+          use: ['css-loader', 'sass-loader'],
+          fallback: 'style-loader',
+        }),
+      },
+    ])
+    expect(config2.module.rules).toEqual([
+      {
+        exclude: /node_modules/,
+        test: /\.[jt]sx?$/,
+        use: [
+          {
+            loader: 'awesome-typescript-loader',
+            options: {
+              useBabel: false,
+              useCache: true,
+            },
+          },
+        ],
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+      {
+        test: /\.scss$/,
+        use: ['style-loader', 'css-loader', 'sass-loader'],
+      },
+    ])
+    expect(config1.plugins).toHaveLength(2)
+    expect(config2.plugins).toHaveLength(4)
   })
 
   it('should build with hot reload', () => {
