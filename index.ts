@@ -234,7 +234,11 @@ export function createConfiguration(options: Options = {}): Configuration {
   // Set up CSS loaders if applicable
   if(cssLoaders.length > 0) {
     configuration = addRules(addPlugins(configuration, [
-      new ExtractTextPlugin('[name].css'),
+      new ExtractTextPlugin({
+        allChunks: true,
+        disable: nodeTarget,
+        filename: '[name].css',
+      }),
     ]), cssLoaders.map(({use, ...rule}) => ({
       ...rule,
       use: hotReload
