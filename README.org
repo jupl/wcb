@@ -69,3 +69,7 @@ Path where source files will be used for building. If path is relative, it is re
 [[https://webpack.js.org/configuration/target/][Webpack targets]] to build to.
 *** ~useBabel: boolean = false~
 If enabled then post-process files with Babel as per [[https://github.com/s-panferov/awesome-typescript-loader][awesome-typescript-loader]].
+
+
+  #+ATTR_HTML: title="Greenkeeper badge"
+  [[https://greenkeeper.io/][file:https://badges.greenkeeper.io/jupl/wcb.svg]]
