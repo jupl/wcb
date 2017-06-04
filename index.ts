@@ -86,6 +86,8 @@ export interface Options {
   destination?: string
   /** Environment to run under (defaults to NODE_ENV) */
   environment?: string
+  /** Output bundle name structure for JS/CSS (defaults to [name]) */
+  filename?: string
   /** If true then hot reload (defaults to HOT_RELOAD === 'true') */
   hotReload?: boolean
   /** Log function */
@@ -114,6 +116,7 @@ export function createConfiguration(options: Options = {}): Configuration {
     environment = process.env.NODE_ENV != undefined
       ? String(process.env.NODE_ENV)
       : undefined,
+    filename = '[name]',
     hotReload = process.env.HOT_MODULES === 'true',
     log = () => undefined,
     pattern = ['**/*.ts{,x}'],
@@ -153,7 +156,7 @@ export function createConfiguration(options: Options = {}): Configuration {
     },
     output: {
       path: resolve(destination),
-      filename: '[name].js',
+      filename: `${filename}.js`,
       publicPath: '/',
     },
     plugins: [
@@ -237,7 +240,7 @@ export function createConfiguration(options: Options = {}): Configuration {
       new ExtractTextPlugin({
         allChunks: true,
         disable: nodeTarget,
-        filename: '[name].css',
+        filename: `${filename}.css`,
       }),
     ]), cssLoaders.map(({use, ...rule}) => ({
       ...rule,
