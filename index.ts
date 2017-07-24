@@ -1,4 +1,3 @@
-import * as BabiliPlugin from 'babili-webpack-plugin'
 import {F_OK} from 'constants'
 import * as CopyPlugin from 'copy-webpack-plugin'
 import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
@@ -20,9 +19,6 @@ import {
   Rule,
   optimize,
 } from 'webpack'
-import * as nodeExternals from 'webpack-node-externals'
-
-type Target = WebpackConfiguration['target']
 
 const ignoreGlobs = [
   '!**/node_modules/**',
@@ -30,7 +26,11 @@ const ignoreGlobs = [
   '!**/__tests__/**',
   '!**/{,*.}{test,spec}.*',
 ]
-const nonNodeTargets: Target[] = ['web', 'webworker', 'electron-renderer']
+const nonNodeTargets: WebpackConfiguration['target'][] = [
+  'web',
+  'webworker',
+  'electron-renderer',
+]
 
 /** Webpack entries */
 export interface Entry {
@@ -99,7 +99,7 @@ export interface Options {
   /** Path that contains source files (defaults to working path) */
   source?: string
   /** Webpack target (defaults to web) */
-  target?: Target
+  target?: WebpackConfiguration['target']
   /** If true then use Babel (defaults to false) */
   useBabel?: boolean
 }
@@ -182,10 +182,11 @@ export function createConfiguration(options: Options = {}): Configuration {
     log('--- wcb: adding development configuration')
     break
   case 'production':
+    const BabiliPlugin = require('babili-webpack-plugin')
     configuration = addPlugins(configuration, [
       new LoaderOptionsPlugin({minimize: true, debug: false}),
       // tslint:disable-next-line:no-any no-unsafe-any
-      new (BabiliPlugin as any)(),
+      new BabiliPlugin(),
     ])
     log('--- wcb: adding production configuration')
     break
@@ -210,7 +211,11 @@ export function createConfiguration(options: Options = {}): Configuration {
 
   // Set up Node specifics if applicable
   if(nodeTarget) {
-    configuration = {...configuration, externals: [nodeExternals()]}
+    const nodeExternals = require('webpack-node-externals')
+    configuration = {
+      ...configuration,
+      externals: [nodeExternals()], // tslint:disable-line:no-unsafe-any
+    }
   }
   if(nodeTarget || target === 'electron-renderer') {
     configuration = {
