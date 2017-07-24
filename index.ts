@@ -22,13 +22,15 @@ import {
 } from 'webpack'
 import * as nodeExternals from 'webpack-node-externals'
 
+type Target = WebpackConfiguration['target']
+
 const ignoreGlobs = [
   '!**/node_modules/**',
   '!**/*.d.ts',
   '!**/__tests__/**',
   '!**/{,*.}{test,spec}.*',
 ]
-const nonNodeTargets = ['web', 'webworker', 'electron-renderer']
+const nonNodeTargets: Target[] = ['web', 'webworker', 'electron-renderer']
 
 /** Webpack entries */
 export interface Entry {
@@ -97,7 +99,7 @@ export interface Options {
   /** Path that contains source files (defaults to working path) */
   source?: string
   /** Webpack target (defaults to web) */
-  target?: string
+  target?: Target
   /** If true then use Babel (defaults to false) */
   useBabel?: boolean
 }
@@ -113,7 +115,7 @@ export function createConfiguration(options: Options = {}): Configuration {
     common = false,
     cssLoaders = [],
     destination = '',
-    environment = process.env.NODE_ENV != undefined
+    environment = process.env.NODE_ENV !== undefined
       ? String(process.env.NODE_ENV)
       : undefined,
     filename = '[name]',

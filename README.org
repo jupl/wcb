@@ -62,7 +62,7 @@ Environment to build under. Currently "development" and "production" is supporte
 *** ~hotReload: boolean = process.env.HOT_MODULES === 'true'~
 If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled.
 *** ~log?: (message: string) => void~
-If a function is provided it will be called for logging.
+If a function is provided it will be called for logging. Otherwise nothing is logged.
 *** ~pattern: string[] = ['**/*.ts{,x}']~
 Glob patterns to pick up as entry points relative to ~source~.
 *** ~source: string = process.cwd()~
