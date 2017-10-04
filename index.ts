@@ -102,6 +102,8 @@ export interface Options {
   target?: WebpackConfiguration['target']
   /** If true then use Babel (defaults to false) */
   useBabel?: boolean
+  /** If true then typecheck during compilation */
+  typeCheck?: boolean
 }
 
 /**
@@ -125,6 +127,7 @@ export function createConfiguration(options: Options = {}): Configuration {
     source = '',
     target = 'web',
     useBabel = false,
+    typeCheck = false,
   } = options
   const {assetsIgnore: ignore = pattern} = options
 
@@ -150,7 +153,11 @@ export function createConfiguration(options: Options = {}): Configuration {
           use: [
             {
               loader: 'awesome-typescript-loader',
-              options: {useBabel, useCache: hotReload},
+              options: {
+                useBabel,
+                useCache: hotReload,
+                transpileOnly: !typeCheck,
+              },
             },
           ],
         },

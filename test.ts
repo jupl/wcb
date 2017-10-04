@@ -29,6 +29,7 @@ const expectedConfig: Configuration = {
             options: {
               useBabel: false,
               useCache: false,
+              transpileOnly: true,
             },
           },
         ],
@@ -176,6 +177,7 @@ describe('createConfig', () => {
             options: {
               useBabel: false,
               useCache: false,
+              transpileOnly: true,
             },
           },
         ],
@@ -205,6 +207,7 @@ describe('createConfig', () => {
             options: {
               useBabel: false,
               useCache: true,
+              transpileOnly: true,
             },
           },
         ],
@@ -240,6 +243,7 @@ describe('createConfig', () => {
                 options: {
                   useBabel: false,
                   useCache: true,
+                  transpileOnly: true,
                 },
               },
             ],
