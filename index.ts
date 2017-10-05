@@ -31,6 +31,8 @@ const nonNodeTargets: WebpackConfiguration['target'][] = [
   'webworker',
   'electron-renderer',
 ]
+/* istanbul ignore next */
+const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
 /** Webpack entries */
 export interface Entry {
@@ -185,7 +187,16 @@ export function createConfiguration(options: Options = {}): Configuration {
   // Add to configuration based on environment
   switch(environment) {
   case 'development':
-    configuration = {...configuration, devtool: 'inline-source-map'}
+    configuration = {
+      ...configuration,
+      devtool: 'inline-source-map',
+      output: {
+        ...configuration.output,
+        devtoolModuleFilenameTemplate({absoluteResourcePath}) {
+          return `${protocol}${absoluteResourcePath.split(sep).join('/')}`
+        },
+      },
+    }
     log('--- wcb: adding development configuration')
     break
   case 'production':

@@ -46,6 +46,7 @@ const expectedConfig: Configuration = {
   },
   target: 'web',
 }
+const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
 describe('createConfig', () => {
   let env
@@ -70,17 +71,25 @@ describe('createConfig', () => {
   })
 
   it('should build with development environment', () => {
-    expect(createConfiguration({environment: 'development'})).toEqual({
-      ...expectedConfig,
-      plugins: [
-        new DefinePlugin({
-          'process.env.NODE_ENV': '"development"',
-          'process.env.IS_CLIENT': '"true"',
-          'process.env.WEBPACK_BUILD': '"true"',
-        }),
-      ],
-      devtool: 'inline-source-map',
-    })
+    const {
+      devtool,
+      plugins,
+      output: {devtoolModuleFilenameTemplate, ...output},
+      ...config,
+    } = createConfiguration({environment: 'development'})
+    const data = {absoluteResourcePath: `some${sep}path`}
+    expect({...config, output}).toEqual(expectedConfig)
+    expect(devtoolModuleFilenameTemplate).toBeInstanceOf(Function)
+    expect((devtoolModuleFilenameTemplate as Function)(data))
+      .toEqual(`${protocol}some/path`)
+    expect(devtool).toEqual('inline-source-map')
+    expect(plugins).toEqual([
+      new DefinePlugin({
+        'process.env.NODE_ENV': '"development"',
+        'process.env.IS_CLIENT': '"true"',
+        'process.env.WEBPACK_BUILD': '"true"',
+      }),
+    ])
   })
 
   it('should build with production environment', () => {
