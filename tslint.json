@@ -1,6 +1,7 @@
 {
-  "extends": "eslint-config-jupl/ts",
+  "extends": "@jupl/tslint-config",
   "rules": {
-    "no-unsafe-any": true
+    "interface-name": false,
+    "no-mixed-interface": false
   }
 }
