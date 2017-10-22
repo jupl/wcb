@@ -192,9 +192,8 @@ export function createConfiguration(options: Options = {}): Configuration {
       devtool: 'inline-source-map',
       output: {
         ...configuration.output,
-        devtoolModuleFilenameTemplate({absoluteResourcePath}) {
-          return `${protocol}${absoluteResourcePath.split(sep).join('/')}`
-        },
+        devtoolModuleFilenameTemplate: ({absoluteResourcePath}) =>
+          `${protocol}${absoluteResourcePath.split(sep).join('/')}`,
       },
     }
     log('--- wcb: adding development configuration')
