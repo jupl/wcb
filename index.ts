@@ -20,6 +20,7 @@ import {
   Rule,
   optimize,
 } from 'webpack'
+import * as nodeExternals from 'webpack-node-externals'
 
 const ignoreGlobs = [
   '!**/node_modules/**',
@@ -263,10 +264,9 @@ export function createConfiguration(options: IOptions = {}): IConfiguration {
 
   // Set up Node specifics if applicable
   if(nodeTarget) {
-    const nodeExternals = require('webpack-node-externals')
     configuration = {
       ...configuration,
-      externals: [nodeExternals()], // tslint:disable-line:no-unsafe-any
+      externals: [nodeExternals()],
     }
   }
   if(nodeTarget || target === 'electron-renderer') {
