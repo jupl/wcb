@@ -1,4 +1,3 @@
-import * as BabiliPlugin from 'babili-webpack-plugin'
 import {F_OK} from 'constants'
 import * as CopyPlugin from 'copy-webpack-plugin'
 import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
@@ -237,9 +236,10 @@ export function createConfiguration(options: IOptions = {}): IConfiguration {
     log('--- wcb: adding development configuration')
     break
   case 'production':
+    const BabiliPlugin = require('babili-webpack-plugin')
     configuration = addPlugins(configuration, [
       new LoaderOptionsPlugin({minimize: true, debug: false}),
-      new (BabiliPlugin as any)(), // tslint:disable-line:no-any
+      new BabiliPlugin(),
     ])
     log('--- wcb: adding production configuration')
     break
