@@ -1,3 +1,4 @@
+import * as BabiliPlugin from 'babili-webpack-plugin'
 import {F_OK} from 'constants'
 import * as CopyPlugin from 'copy-webpack-plugin'
 import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
@@ -35,13 +36,19 @@ const nonNodeTargets: WebpackConfiguration['target'][] = [
 const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
 /** Webpack entries */
-export interface Entry {
+export interface IEntry {
   /** Each entry is a list of modules */
   [name: string]: string[]
 }
 
+/**
+ * Webpack entries
+ * @deprecated Use IEntry instead
+ */
+export type Entry = IEntry
+
 /** Webpack output */
-export interface Output extends WebpackOutput {
+export interface IOutput extends WebpackOutput {
   /** Path is provided */
   path: string
   /** Filename is provided */
@@ -50,34 +57,58 @@ export interface Output extends WebpackOutput {
   publicPath: string
 }
 
+/**
+ * Webpack output
+ * @deprecated Use IOutput instead
+ */
+export type Output = IOutput
+
 /** Webpack module resolution */
-export interface Resolve extends NewResolve {
+export interface IResolve extends NewResolve {
   /** Extensions is provided */
   extensions: string[]
 }
 
+/**
+ * Webpack module resolution
+ * @deprecated Use IResolve instead
+ */
+export type Resolve = IResolve
+
 /** Webpack configuration specific for this application */
-export interface Configuration extends WebpackConfiguration {
+export interface IConfiguration extends WebpackConfiguration {
   /** Entries must be an object to list of modules */
-  entry: Entry
+  entry: IEntry
   /** Module follows Webpack 2 format */
   module: NewModule
   /** Output is provided */
-  output: Output
+  output: IOutput
   /** Plugins are specified */
   plugins: Plugin[]
   /** Resolve options are specified */
-  resolve: Resolve
+  resolve: IResolve
 }
 
+/**
+ * Webpack configuration specific for this application
+ * @deprecated Use IConfiguration instead
+ */
+export type Configuration = IConfiguration
+
 /** Webpack loader for CSS family files */
-export interface CSSLoader extends NewUseRule {
+export interface ICSSLoader extends NewUseRule {
   /** Use must be a list of loaders */
   use: Loader[]
 }
 
+/**
+ * Webpack loader for CSS family files
+ * @deprecated Use ICSSLoader instead
+ */
+export type CSSLoader = ICSSLoader
+
 /** Options for webpack build */
-export interface Options {
+export interface IOptions {
   /** Path that contains static assets (defaults to no static assets) */
   assets?: string
   /** Asset files to ignore when copying (defaults to pattern parameter) */
@@ -85,7 +116,7 @@ export interface Options {
   /** Create a simple common chunk if multiple entries (defaults to false) */
   common?: string | boolean
   /** CSS loaders */
-  cssLoaders?: CSSLoader[]
+  cssLoaders?: ICSSLoader[]
   /** Path to write output to (defaults to working path) */
   destination?: string
   /** Environment to run under (defaults to NODE_ENV) */
@@ -109,11 +140,17 @@ export interface Options {
 }
 
 /**
+ * Options for webpack build
+ * @deprecated Use IOptions instead
+ */
+export type Options = IOptions
+
+/**
  * Build Webpack configuration
  * @param options Options
  * @return Webpack configuration
  */
-export function createConfiguration(options: Options = {}): Configuration {
+export function createConfiguration(options: IOptions = {}): IConfiguration {
   const {
     assets,
     common = false,
@@ -135,7 +172,7 @@ export function createConfiguration(options: Options = {}): Configuration {
 
   // Create base configuration
   const nodeTarget = nonNodeTargets.indexOf(target) === -1
-  let configuration: Readonly<Configuration> = {
+  let configuration: Readonly<IConfiguration> = {
     context: resolve(source),
     entry: find([...pattern, ...ignoreGlobs], {srcBase: source})
       .map(file => ({
@@ -199,11 +236,9 @@ export function createConfiguration(options: Options = {}): Configuration {
     log('--- wcb: adding development configuration')
     break
   case 'production':
-    const BabiliPlugin = require('babili-webpack-plugin')
     configuration = addPlugins(configuration, [
       new LoaderOptionsPlugin({minimize: true, debug: false}),
-      // tslint:disable-next-line:no-any no-unsafe-any
-      new BabiliPlugin(),
+      new (BabiliPlugin as any)(), // tslint:disable-line:no-any
     ])
     log('--- wcb: adding production configuration')
     break
@@ -293,9 +328,9 @@ export function createConfiguration(options: Options = {}): Configuration {
  * @return Updated configuration
  */
 export function addPlugins(
-  configuration: Configuration,
+  configuration: IConfiguration,
   plugins: Plugin[],
-): Configuration {
+): IConfiguration {
   return {...configuration, plugins: [...configuration.plugins, ...plugins]}
 }
 
@@ -306,9 +341,9 @@ export function addPlugins(
  * @return Updated configuration
  */
 export function addRules(
-  configuration: Configuration,
+  configuration: IConfiguration,
   rules: Rule[],
-): Configuration {
+): IConfiguration {
   return {
     ...configuration,
     module: {
@@ -325,9 +360,9 @@ export function addRules(
  * @return Updated configuration
  */
 export function addToEntries(
-  configuration: Configuration,
+  configuration: IConfiguration,
   modules: string[],
-): Configuration {
+): IConfiguration {
   return {
     ...configuration,
     entry: Object.keys(configuration.entry)

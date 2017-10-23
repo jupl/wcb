@@ -6,9 +6,8 @@ import {
   DefinePlugin,
   HotModuleReplacementPlugin,
   NoEmitOnErrorsPlugin,
-  optimize,
 } from 'webpack'
-import {CSSLoader, addRules, createConfiguration} from '.'
+import {ICSSLoader, addRules, createConfiguration} from '.'
 
 // tslint:disable:no-magic-numbers
 
@@ -49,15 +48,15 @@ const expectedConfig: Configuration = {
 const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
 describe('createConfig', () => {
-  let env
+  let env: string | undefined
 
   beforeAll(() => {
     env = process.env.NODE_ENV
-    delete process.env.NODE_ENV
+    delete process.env.NODE_ENV // tslint:disable-line:no-object-mutation
   })
 
   afterAll(() => {
-    process.env.NODE_ENV = env
+    process.env.NODE_ENV = env // tslint:disable-line:no-object-mutation
   })
 
   it('should build with no environment', () => {
@@ -104,7 +103,7 @@ describe('createConfig', () => {
         'process.env.IS_CLIENT': '"true"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
-      new BabiliPlugin(),
+      new (BabiliPlugin as any)(), // tslint:disable-line:no-any
     ]))
   })
 
@@ -170,7 +169,7 @@ describe('createConfig', () => {
   })
 
   it('should build with CSS loaders', () => {
-    const cssLoaders: CSSLoader[] = [
+    const cssLoaders: ICSSLoader[] = [
       {test: /\.css$/, use: ['css-loader']},
       {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
     ]

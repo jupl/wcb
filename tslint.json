@@ -1,7 +1,6 @@
 {
   "extends": "@jupl/tslint-config",
   "rules": {
-    "interface-name": false,
     "no-mixed-interface": false
   }
 }
