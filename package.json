@@ -19,7 +19,7 @@
     "coverage:watch": "npm run coverage -- --watch",
     "codecov": "npm run coverage && codecov",
     "lint": "npm run lint:file",
-    "lint:file": "tslint --fix --project tsconfig.json",
+    "lint:file": "tslint --project tsconfig.json",
     "test": "npm run clean && jest",
     "test:watch": "npm run test -- --watch",
     "pub": "npm run clean && tsc --project tsconfig.build.json && npm publish"
