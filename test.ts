@@ -11,6 +11,7 @@ import {CSSLoader, addRules, createConfiguration} from '.'
 // tslint:disable:no-magic-numbers
 
 const expectedConfig: Configuration = {
+  mode: 'none',
   context: __dirname,
   entry: {
     extra: [`.${sep}extra.ts`],

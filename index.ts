@@ -135,6 +135,7 @@ export function createConfiguration(options: Options = {}): Configuration {
   // Create base configuration
   const nodeTarget = nonNodeTargets.indexOf(target) === -1
   let configuration: Configuration = {
+    mode: 'none',
     context: resolve(source),
     entry: find([...pattern, ...ignoreGlobs], {srcBase: source})
       .map(file => ({
