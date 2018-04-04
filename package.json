@@ -25,11 +25,12 @@
     "pub": "npm run clean && tsc --project tsconfig.build.json && npm publish"
   },
   "dependencies": {
-    "awesome-typescript-loader": "^4.0.1",
+    "awesome-typescript-loader": "^5.0.0-1",
     "babili-webpack-plugin": "^0.1.1",
     "copy-webpack-plugin": "^4.5.1",
     "extract-text-webpack-plugin": "^4.0.0-beta.0",
     "globule": "^1.1.0",
+    "hard-source-webpack-plugin": "^0.6.4",
     "style-loader": "^0.20.3",
     "webpack-node-externals": "^1.7.2"
   },
