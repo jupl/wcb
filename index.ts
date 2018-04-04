@@ -3,8 +3,6 @@ import * as CopyPlugin from 'copy-webpack-plugin'
 import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {accessSync} from 'fs'
 import {find} from 'globule'
-// @ts-ignore: Hard source webpack plugin does not have a TS definition
-import * as HardSourcePlugin from 'hard-source-webpack-plugin'
 import {basename, dirname, extname, join, resolve, sep} from 'path'
 import {
   Configuration as WebpackConfiguration,
@@ -182,7 +180,6 @@ export function createConfiguration(options: Options = {}): Configuration {
           : 'undefined',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
-      new HardSourcePlugin(),
     ],
     resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
     target,

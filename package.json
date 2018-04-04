@@ -1,6 +1,6 @@
 {
   "name": "wcb",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Personal Webpack config builder",
   "author": "jupl",
   "license": "MIT",
@@ -30,7 +30,6 @@
     "copy-webpack-plugin": "^4.5.1",
     "extract-text-webpack-plugin": "^4.0.0-beta.0",
     "globule": "^1.1.0",
-    "hard-source-webpack-plugin": "^0.6.4",
     "style-loader": "^0.20.3",
     "webpack-node-externals": "^1.7.2"
   },

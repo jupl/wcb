@@ -1,6 +1,5 @@
 import * as BabiliPlugin from 'babili-webpack-plugin'
 import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
-import * as HardSourcePlugin from 'hard-source-webpack-plugin'
 import {sep} from 'path'
 import {
   Configuration,
@@ -69,7 +68,6 @@ describe('createConfig', () => {
         'process.env.IS_CLIENT': '"true"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
-      new HardSourcePlugin(),
     ]})
   })
 
@@ -92,7 +90,6 @@ describe('createConfig', () => {
         'process.env.IS_CLIENT': '"true"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
-      new HardSourcePlugin(),
     ])
   })
 
@@ -101,14 +98,13 @@ describe('createConfig', () => {
       environment: 'production',
     })
     expect(config).toEqual(expectedConfig)
-    expect(plugins).toHaveLength(4)
+    expect(plugins).toHaveLength(3)
     expect(plugins).toEqual(expect.arrayContaining([
       new DefinePlugin({
         'process.env.NODE_ENV': '"production"',
         'process.env.IS_CLIENT': '"true"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
-      new HardSourcePlugin(),
       new (BabiliPlugin as any)(), // tslint:disable-line:no-any
     ]))
   })
@@ -116,14 +112,13 @@ describe('createConfig', () => {
   it('should build with assets', () => {
     const {plugins, ...config} = createConfiguration({assets: ''})
     expect(config).toEqual(expectedConfig)
-    expect(plugins).toHaveLength(3)
+    expect(plugins).toHaveLength(2)
     expect(plugins).toEqual(expect.arrayContaining([
       new DefinePlugin({
         'process.env.NODE_ENV': 'undefined',
         'process.env.IS_CLIENT': '"true"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
-      new HardSourcePlugin(),
     ]))
   })
 
@@ -136,7 +131,6 @@ describe('createConfig', () => {
           'process.env.IS_CLIENT': '"true"',
           'process.env.WEBPACK_BUILD': '"true"',
         }),
-        new HardSourcePlugin(),
       ],
     })
   })
@@ -151,7 +145,6 @@ describe('createConfig', () => {
           'process.env.IS_CLIENT': '"false"',
           'process.env.WEBPACK_BUILD': '"true"',
         }),
-        new HardSourcePlugin(),
       ],
       node: {
         __dirname: false,
@@ -256,8 +249,8 @@ describe('createConfig', () => {
         use: ['style-loader', 'css-loader', 'sass-loader'],
       },
     ])
-    expect(config1.plugins).toHaveLength(3)
-    expect(config2.plugins).toHaveLength(4)
+    expect(config1.plugins).toHaveLength(2)
+    expect(config2.plugins).toHaveLength(3)
   })
 
   it('should build with hot reload', () => {
@@ -296,7 +289,6 @@ describe('createConfig', () => {
           'process.env.IS_CLIENT': '"true"',
           'process.env.WEBPACK_BUILD': '"true"',
         }),
-        new HardSourcePlugin(),
         new HotModuleReplacementPlugin(),
       ],
     })
