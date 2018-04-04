@@ -10,14 +10,12 @@ import {
   HotModuleReplacementPlugin,
   Loader,
   LoaderOptionsPlugin,
-  NewModule,
-  NewResolve,
+  Module as OldModule,
   NewUseRule,
-  NoEmitOnErrorsPlugin,
   Output as WebpackOutput,
   Plugin,
+  Resolve as OldResolve,
   Rule,
-  optimize,
 } from 'webpack'
 import * as nodeExternals from 'webpack-node-externals'
 
@@ -36,19 +34,13 @@ const nonNodeTargets: WebpackConfiguration['target'][] = [
 const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
 /** Webpack entries */
-export interface IEntry {
+export interface Entry {
   /** Each entry is a list of modules */
   [name: string]: string[]
 }
 
-/**
- * Webpack entries
- * @deprecated Use IEntry instead
- */
-export type Entry = IEntry
-
 /** Webpack output */
-export interface IOutput extends WebpackOutput {
+export interface Output extends WebpackOutput {
   /** Path is provided */
   path: string
   /** Filename is provided */
@@ -57,58 +49,34 @@ export interface IOutput extends WebpackOutput {
   publicPath: string
 }
 
-/**
- * Webpack output
- * @deprecated Use IOutput instead
- */
-export type Output = IOutput
-
 /** Webpack module resolution */
-export interface IResolve extends NewResolve {
+export interface Resolve extends OldResolve {
   /** Extensions is provided */
   extensions: string[]
 }
 
-/**
- * Webpack module resolution
- * @deprecated Use IResolve instead
- */
-export type Resolve = IResolve
-
 /** Webpack configuration specific for this application */
-export interface IConfiguration extends WebpackConfiguration {
+export interface Configuration extends WebpackConfiguration {
   /** Entries must be an object to list of modules */
-  entry: IEntry
+  entry: Entry
   /** Module follows Webpack 2 format */
-  module: NewModule
+  module: OldModule
   /** Output is provided */
-  output: IOutput
+  output: Output
   /** Plugins are specified */
   plugins: Plugin[]
   /** Resolve options are specified */
-  resolve: IResolve
+  resolve: Resolve
 }
 
-/**
- * Webpack configuration specific for this application
- * @deprecated Use IConfiguration instead
- */
-export type Configuration = IConfiguration
-
 /** Webpack loader for CSS family files */
-export interface ICSSLoader extends NewUseRule {
+export interface CSSLoader extends NewUseRule {
   /** Use must be a list of loaders */
   use: Loader[]
 }
 
-/**
- * Webpack loader for CSS family files
- * @deprecated Use ICSSLoader instead
- */
-export type CSSLoader = ICSSLoader
-
 /** Options for webpack build */
-export interface IOptions {
+export interface Options {
   /** Path that contains static assets (defaults to no static assets) */
   assets?: string
   /** Asset files to ignore when copying (defaults to pattern parameter) */
@@ -116,7 +84,7 @@ export interface IOptions {
   /** Create a simple common chunk if multiple entries (defaults to false) */
   common?: string | boolean
   /** CSS loaders */
-  cssLoaders?: ICSSLoader[]
+  cssLoaders?: CSSLoader[]
   /** Path to write output to (defaults to working path) */
   destination?: string
   /** Environment to run under (defaults to NODE_ENV) */
@@ -140,17 +108,11 @@ export interface IOptions {
 }
 
 /**
- * Options for webpack build
- * @deprecated Use IOptions instead
- */
-export type Options = IOptions
-
-/**
  * Build Webpack configuration
  * @param options Options
  * @return Webpack configuration
  */
-export function createConfiguration(options: IOptions = {}): IConfiguration {
+export function createConfiguration(options: Options = {}): Configuration {
   const {
     assets,
     common = false,
@@ -172,7 +134,7 @@ export function createConfiguration(options: IOptions = {}): IConfiguration {
 
   // Create base configuration
   const nodeTarget = nonNodeTargets.indexOf(target) === -1
-  let configuration: Readonly<IConfiguration> = {
+  let configuration: Configuration = {
     context: resolve(source),
     entry: find([...pattern, ...ignoreGlobs], {srcBase: source})
       .map(file => ({
@@ -286,11 +248,21 @@ export function createConfiguration(options: IOptions = {}): IConfiguration {
 
   // Set up common chunk if applicable
   if(common !== false && Object.keys(configuration.entry).length > 1) {
-    configuration = addPlugins(configuration, [
-      new optimize.CommonsChunkPlugin({
-        name: common === true ? 'common' : common,
-      }),
-    ])
+    configuration = {
+      ...configuration,
+      optimization: {
+        ...configuration.optimization,
+        splitChunks: {
+          cacheGroups: {
+            common: {
+              name: common === true ? 'common' : common,
+              chunks: 'initial',
+              minChunks: 2,
+            },
+          },
+        },
+      },
+    }
   }
 
   // Set up CSS loaders if applicable
@@ -311,9 +283,14 @@ export function createConfiguration(options: IOptions = {}): IConfiguration {
 
   // Add hot reload support if specified
   if(hotReload) {
-    configuration = addToEntries(addPlugins(configuration, [
+    configuration = addToEntries(addPlugins({
+      ...configuration,
+      optimization: {
+        ...configuration.optimization,
+        noEmitOnErrors: true,
+      },
+    }, [
       new HotModuleReplacementPlugin(),
-      new NoEmitOnErrorsPlugin(),
     ]), ['webpack-hot-middleware/client'])
     log('--- wcb: adding hot modules configuration')
   }
@@ -328,9 +305,9 @@ export function createConfiguration(options: IOptions = {}): IConfiguration {
  * @return Updated configuration
  */
 export function addPlugins(
-  configuration: IConfiguration,
+  configuration: Configuration,
   plugins: Plugin[],
-): IConfiguration {
+): Configuration {
   return {...configuration, plugins: [...configuration.plugins, ...plugins]}
 }
 
@@ -341,9 +318,9 @@ export function addPlugins(
  * @return Updated configuration
  */
 export function addRules(
-  configuration: IConfiguration,
+  configuration: Configuration,
   rules: Rule[],
-): IConfiguration {
+): Configuration {
   return {
     ...configuration,
     module: {
@@ -360,9 +337,9 @@ export function addRules(
  * @return Updated configuration
  */
 export function addToEntries(
-  configuration: IConfiguration,
+  configuration: Configuration,
   modules: string[],
-): IConfiguration {
+): Configuration {
   return {
     ...configuration,
     entry: Object.keys(configuration.entry)

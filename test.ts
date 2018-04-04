@@ -5,9 +5,8 @@ import {
   Configuration,
   DefinePlugin,
   HotModuleReplacementPlugin,
-  NoEmitOnErrorsPlugin,
 } from 'webpack'
-import {ICSSLoader, addRules, createConfiguration} from '.'
+import {CSSLoader, addRules, createConfiguration} from '.'
 
 // tslint:disable:no-magic-numbers
 
@@ -158,18 +157,32 @@ describe('createConfig', () => {
   })
 
   it('should build with common chunks', () => {
-    const {plugins: plugins1, ...config1} = createConfiguration({common: true})
-    const {plugins: plugins2, ...config2} = createConfiguration({
+    const config1 = createConfiguration({common: true})
+    const config2 = createConfiguration({
       common: 'shared',
     })
-    expect(config1).toEqual(expectedConfig)
-    expect(config2).toEqual(expectedConfig)
-    expect(plugins1).toHaveLength(2)
-    expect(plugins2).toHaveLength(2)
+    expect(config1.optimization!.splitChunks).toEqual({
+      cacheGroups: {
+        common: {
+          name: 'common',
+          chunks: 'initial',
+          minChunks: 2,
+        },
+      },
+    })
+    expect(config2.optimization!.splitChunks).toEqual({
+      cacheGroups: {
+        common: {
+          name: 'shared',
+          chunks: 'initial',
+          minChunks: 2,
+        },
+      },
+    })
   })
 
   it('should build with CSS loaders', () => {
-    const cssLoaders: ICSSLoader[] = [
+    const cssLoaders: CSSLoader[] = [
       {test: /\.css$/, use: ['css-loader']},
       {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
     ]
@@ -230,7 +243,7 @@ describe('createConfig', () => {
       },
     ])
     expect(config1.plugins).toHaveLength(2)
-    expect(config2.plugins).toHaveLength(4)
+    expect(config2.plugins).toHaveLength(3)
   })
 
   it('should build with hot reload', () => {
@@ -258,6 +271,9 @@ describe('createConfig', () => {
           },
         ],
       },
+      optimization: {
+        noEmitOnErrors: true,
+      },
       plugins: [
         new DefinePlugin({
           'process.env.NODE_ENV': 'undefined',
@@ -265,7 +281,6 @@ describe('createConfig', () => {
           'process.env.WEBPACK_BUILD': '"true"',
         }),
         new HotModuleReplacementPlugin(),
-        new NoEmitOnErrorsPlugin(),
       ],
     })
   })
