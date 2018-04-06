@@ -201,10 +201,10 @@ export function createConfiguration(options: Options = {}): Configuration {
     log('--- wcb: adding development configuration')
     break
   case 'production':
-    const BabiliPlugin = require('babili-webpack-plugin')
+    const BabelMinifyPlugin = require('babel-minify-webpack-plugin')
     configuration = addPlugins(configuration, [
       new LoaderOptionsPlugin({minimize: true, debug: false}),
-      new BabiliPlugin(),
+      new BabelMinifyPlugin(),
     ])
     log('--- wcb: adding production configuration')
     break

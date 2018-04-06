@@ -1,5 +1,5 @@
 // @ts-ignore
-import * as BabiliPlugin from 'babili-webpack-plugin'
+import * as BabelMinifyPlugin from 'babel-minify-webpack-plugin'
 import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {sep} from 'path'
 import {
@@ -106,7 +106,7 @@ describe('createConfig', () => {
         'process.env.IS_CLIENT': '"true"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
-      new (BabiliPlugin as any)(), // tslint:disable-line:no-any
+      new (BabelMinifyPlugin as any)(), // tslint:disable-line:no-any
     ]))
   })
 
