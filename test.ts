@@ -1,3 +1,4 @@
+// @ts-ignore
 import * as BabiliPlugin from 'babili-webpack-plugin'
 import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {sep} from 'path'
