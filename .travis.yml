@@ -4,9 +4,9 @@ node_js:
   - "6"
   - "8"
   - "node"
-before_install: yarn global add greenkeeper-lockfile@1
+before_install: npm i -g greenkeeper-lockfile@1
 before_script: greenkeeper-lockfile-update
 after_script: greenkeeper-lockfile-upload
 script:
-  - yarn lint
-  - yarn codecov
+  - npm run lint
+  - npm run codecov
