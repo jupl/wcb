@@ -18,34 +18,13 @@ const expectedConfig: Configuration = {
     extra: [`.${sep}extra.ts`],
     index: [`.${sep}index.ts`],
   },
-  module: {
-    rules: [
-      {
-        exclude: /node_modules/,
-        test: /\.[jt]sx?$/,
-        use: [
-          {
-            loader: 'awesome-typescript-loader',
-            options: {
-              useBabel: false,
-              useCache: false,
-              transpileOnly: true,
-              cacheDirectory: 'node_modules/.awcache',
-              forceIsolatedModules: true,
-            },
-          },
-        ],
-      },
-    ],
-  },
+  module: {rules: []},
   output: {
     filename: '[name].js',
     path: __dirname,
     publicPath: '/',
   },
-  resolve: {
-    extensions: ['.js', '.json', '.jsx', '.ts', '.tsx'],
-  },
+  resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
   target: 'web',
 }
 const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
@@ -108,6 +87,23 @@ describe('createConfig', () => {
       }),
       new (BabelMinifyPlugin as any)(), // tslint:disable-line:no-any
     ]))
+  })
+
+  it('should build with babel', () => {
+    expect(createConfiguration({useBabel: true}).module.rules).toEqual([
+      {
+        test: /\.[jt]sx?$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              cacheDirectory: false,
+            },
+          },
+        ],
+      },
+    ])
   })
 
   it('should build with assets', () => {
@@ -194,22 +190,6 @@ describe('createConfig', () => {
     const config2 = createConfiguration({cssLoaders, hotReload: true})
     expect(config1.module.rules).toEqual([
       {
-        exclude: /node_modules/,
-        test: /\.[jt]sx?$/,
-        use: [
-          {
-            loader: 'awesome-typescript-loader',
-            options: {
-              useBabel: false,
-              useCache: false,
-              transpileOnly: true,
-              cacheDirectory: 'node_modules/.awcache',
-              forceIsolatedModules: true,
-            },
-          },
-        ],
-      },
-      {
         test: /\.css$/,
         use: ExtractTextPlugin.extract({
           use: ['css-loader'],
@@ -226,22 +206,6 @@ describe('createConfig', () => {
     ])
     expect(config2.module.rules).toEqual([
       {
-        exclude: /node_modules/,
-        test: /\.[jt]sx?$/,
-        use: [
-          {
-            loader: 'awesome-typescript-loader',
-            options: {
-              useBabel: false,
-              useCache: true,
-              transpileOnly: true,
-              cacheDirectory: 'node_modules/.awcache',
-              forceIsolatedModules: true,
-            },
-          },
-        ],
-      },
-      {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
       },
@@ -255,7 +219,7 @@ describe('createConfig', () => {
   })
 
   it('should build with hot reload', () => {
-    expect(createConfiguration({hotReload: true})).toEqual({
+    expect(createConfiguration({useBabel: true, hotReload: true})).toEqual({
       ...expectedConfig,
       entry: {
         extra: ['webpack-hot-middleware/client', `.${sep}extra.ts`],
@@ -268,13 +232,9 @@ describe('createConfig', () => {
             test: /\.[jt]sx?$/,
             use: [
               {
-                loader: 'awesome-typescript-loader',
+                loader: 'babel-loader',
                 options: {
-                  useBabel: false,
-                  useCache: true,
-                  transpileOnly: true,
-                  cacheDirectory: 'node_modules/.awcache',
-                  forceIsolatedModules: true,
+                  cacheDirectory: true,
                 },
               },
             ],

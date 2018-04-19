@@ -7,13 +7,16 @@
 [[https://david-dm.org/jupl/wcb?type=dev][file:https://img.shields.io/david/dev/jupl/wcb.svg?style=flat-square]]
 
 ** About
-Personal [[https://webpack.js.org/][Webpack]] config builder, targeted specifically for [[https://www.typescriptlang.org/][TypeScript]].
+Personal [[https://webpack.js.org/][Webpack]] config builder with support for [[https://babeljs.io/][Babel]].
 
 ** Installation
 #+BEGIN_EXAMPLE
-npm install typescript wcb webpack
-npm install babel-core # Required if using useBabel option below
+npm install wcb webpack
+npm install @babel/core # Required for useBabel option
 #+END_EXAMPLE
+
+** TypeScript
+TypeScript files will be picked up automatically for [[https://github.com/babel/babel-loader][babel-loader]] if Babel is used. If so make sure to use [[https://github.com/babel/babel/tree/master/packages/babel-preset-typescript][@babel/preset-typescript]].
 
 ** Usage
 #+BEGIN_SRC typescript
@@ -28,7 +31,7 @@ const extra = addToEntries(createConfiguration({
   common: true,
   cssLoaders: [{test: /\.css$/, use: ['css-loader']],
 }), [
-  'react-hot-loader/patch',
+  'dotenv/config',
 ])
 
 // webpack.config.ts
@@ -65,13 +68,11 @@ Environment to build under. Currently "development" and "production" is supporte
 If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled.
 *** ~log?: (message: string) => void~
 If a function is provided it will be called for logging. Otherwise nothing is logged.
-*** ~pattern: string[] = ['**/*.ts{,x}']~
-Glob patterns to pick up as entry points relative to ~source~. If you want to use JavaScript as entry points then instead of ~ts{,x}~ use ~{j,t}s{,x}~.
+*** ~pattern: string[] = ['**/*.{j,t}s{,x}']~
+Glob patterns to pick up as entry points relative to ~source~.
 *** ~source: string = process.cwd()~
 Path where source files will be used for building. If path is relative, it is relative to ~process.cwd()~.
 *** ~target: string = 'web'~
 [[https://webpack.js.org/configuration/target/][Webpack targets]] to build to.
 *** ~useBabel: boolean = false~
-If enabled then post-process files with Babel as per [[https://github.com/s-panferov/awesome-typescript-loader][awesome-typescript-loader]].
-*** ~typeCheck: boolean = false~
-If enabled then type check code as per [[https://github.com/s-panferov/awesome-typescript-loader][awesome-typescript-loader]]'s ~compileOnly~ option.
+If enabled then post-process files with Babel using [[https://github.com/babel/babel-loader][babel-loader]].

@@ -20,6 +20,7 @@ import {
 import * as nodeExternals from 'webpack-node-externals'
 
 const ignoreGlobs = [
+  '!**/coverage/**',
   '!**/node_modules/**',
   '!**/*.d.ts',
   '!**/__tests__/**',
@@ -103,8 +104,6 @@ export interface Options {
   target?: WebpackConfiguration['target']
   /** If true then use Babel (defaults to false) */
   useBabel?: boolean
-  /** If true then typecheck during compilation */
-  typeCheck?: boolean
 }
 
 /**
@@ -124,11 +123,10 @@ export function createConfiguration(options: Options = {}): Configuration {
     filename = '[name]',
     hotReload = process.env.HOT_MODULES === 'true',
     log = () => undefined,
-    pattern = ['**/*.ts{,x}'],
+    pattern = ['**/*.{j,t}s{,x}'],
     source = '',
     target = 'web',
     useBabel = false,
-    typeCheck = false,
   } = options
   const {assetsIgnore: ignore = pattern} = options
 
@@ -147,26 +145,7 @@ export function createConfiguration(options: Options = {}): Configuration {
         ...obj,
         [join(dir, base)]: [file],
       }), {}),
-    module: {
-      rules: [
-        {
-          test: /\.[jt]sx?$/,
-          exclude: /node_modules/,
-          use: [
-            {
-              loader: 'awesome-typescript-loader',
-              options: {
-                useBabel,
-                useCache: hotReload,
-                transpileOnly: !typeCheck,
-                cacheDirectory: 'node_modules/.awcache',
-                forceIsolatedModules: true,
-              },
-            },
-          ],
-        },
-      ],
-    },
+    module: {rules: []},
     output: {
       path: resolve(destination),
       filename: `${filename}.js`,
@@ -185,6 +164,25 @@ export function createConfiguration(options: Options = {}): Configuration {
     target,
   }
   log('--- wcb: making base configuration')
+
+  // Use babel if available
+  if(useBabel) {
+    configuration = addRules(configuration, [
+      {
+        test: /\.[jt]sx?$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              cacheDirectory: hotReload,
+            },
+          },
+        ],
+      },
+    ])
+    log('--- wcb: using babel-loader')
+  }
 
   // Add to configuration based on environment
   switch(environment) {
