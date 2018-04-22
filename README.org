@@ -50,7 +50,7 @@ Given an existing configuration from ~createConfiguration~, load additional Node
 Path that contains static files to copy over to the final build. If path is relative, it is relative to ~process.cwd()~. If not specified no static files are copied over.
 *** ~assetsIgnore: string[] = pattern~
 Glob patterns indicating files to ignore when using the ~assets~ option. By default it uses the ~pattern~ option.
-*** ~atlOptions: object~
+*** ~atlOptions?: object~
 Additional options in [[https://github.com/s-panferov/awesome-typescript-loader][awesome-typescript-loader]] to override.
 *** ~cssLoaders: Loader[] = []~
 List of CSS [[https://webpack.js.org/configuration/module/#rule][loaders]] to incorporate. =extract-text-webpack-plugin= is used by default, whereas =style-loader= is used for hot reloading. Do *NOT* use =extract-text-webpack-plugin= nor =style-loader= as it will automatically be included.
