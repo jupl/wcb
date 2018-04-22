@@ -6,6 +6,7 @@ import {
   Configuration,
   DefinePlugin,
   HotModuleReplacementPlugin,
+  Plugin,
 } from 'webpack'
 import {CSSLoader, addRules, createConfiguration} from '.'
 
@@ -18,7 +19,25 @@ const expectedConfig: Configuration = {
     extra: [`.${sep}extra.ts`],
     index: [`.${sep}index.ts`],
   },
-  module: {rules: []},
+  module: {
+    rules: [
+      {
+        exclude: /node_modules/,
+        test: /\.[jt]sx?$/,
+        use: [
+          {
+            loader: 'awesome-typescript-loader',
+            options: {
+              useCache: false,
+              transpileOnly: true,
+              cacheDirectory: 'node_modules/.awcache',
+              forceIsolatedModules: true,
+            },
+          },
+        ],
+      },
+    ],
+  },
   output: {
     filename: '[name].js',
     path: __dirname,
@@ -27,6 +46,13 @@ const expectedConfig: Configuration = {
   resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
   target: 'web',
 }
+const expectedPlugins: Plugin[] = [
+  new DefinePlugin({
+    'process.env.NODE_ENV': 'undefined',
+    'process.env.IS_CLIENT': '"true"',
+    'process.env.WEBPACK_BUILD': '"true"',
+  }),
+]
 const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
 describe('createConfig', () => {
@@ -42,13 +68,10 @@ describe('createConfig', () => {
   })
 
   it('should build with no environment', () => {
-    expect(createConfiguration()).toEqual({...expectedConfig, plugins: [
-      new DefinePlugin({
-        'process.env.NODE_ENV': 'undefined',
-        'process.env.IS_CLIENT': '"true"',
-        'process.env.WEBPACK_BUILD': '"true"',
-      }),
-    ]})
+    expect(createConfiguration()).toEqual({
+      ...expectedConfig,
+      plugins: expectedPlugins,
+    })
   })
 
   it('should build with development environment', () => {
@@ -56,7 +79,7 @@ describe('createConfig', () => {
       devtool,
       plugins,
       output: {devtoolModuleFilenameTemplate, ...output},
-      ...config,
+      ...config
     } = createConfiguration({environment: 'development'})
     const data = {absoluteResourcePath: `some${sep}path`}
     expect({...config, output}).toEqual(expectedConfig)
@@ -89,46 +112,17 @@ describe('createConfig', () => {
     ]))
   })
 
-  it('should build with babel', () => {
-    expect(createConfiguration({useBabel: true}).module.rules).toEqual([
-      {
-        test: /\.[jt]sx?$/,
-        exclude: /node_modules/,
-        use: [
-          {
-            loader: 'babel-loader',
-            options: {
-              cacheDirectory: false,
-            },
-          },
-        ],
-      },
-    ])
-  })
-
   it('should build with assets', () => {
     const {plugins, ...config} = createConfiguration({assets: ''})
     expect(config).toEqual(expectedConfig)
     expect(plugins).toHaveLength(2)
-    expect(plugins).toEqual(expect.arrayContaining([
-      new DefinePlugin({
-        'process.env.NODE_ENV': 'undefined',
-        'process.env.IS_CLIENT': '"true"',
-        'process.env.WEBPACK_BUILD': '"true"',
-      }),
-    ]))
+    expect(plugins).toEqual(expect.arrayContaining(expectedPlugins))
   })
 
   it('should build with invalid assets', () => {
     expect(createConfiguration({assets: 'path/to/assets'})).toEqual({
       ...expectedConfig,
-      plugins: [
-        new DefinePlugin({
-          'process.env.NODE_ENV': 'undefined',
-          'process.env.IS_CLIENT': '"true"',
-          'process.env.WEBPACK_BUILD': '"true"',
-        }),
-      ],
+      plugins: expectedPlugins,
     })
   })
 
@@ -158,26 +152,28 @@ describe('createConfig', () => {
 
   it('should build with common chunks', () => {
     const config1 = createConfiguration({common: true})
-    const config2 = createConfiguration({
-      common: 'shared',
-    })
-    expect(config1.optimization!.splitChunks).toEqual({
-      cacheGroups: {
-        common: {
-          name: 'common',
-          chunks: 'initial',
-          minChunks: 2,
+    const config2 = createConfiguration({common: 'shared'})
+    expect(config1).toEqual({
+      ...expectedConfig,
+      optimization: {
+        splitChunks: {
+          cacheGroups: {
+            common: {name: 'common', chunks: 'initial', minChunks: 2},
+          },
         },
       },
+      plugins: expectedPlugins,
     })
-    expect(config2.optimization!.splitChunks).toEqual({
-      cacheGroups: {
-        common: {
-          name: 'shared',
-          chunks: 'initial',
-          minChunks: 2,
+    expect(config2).toEqual({
+      ...expectedConfig,
+      optimization: {
+        splitChunks: {
+          cacheGroups: {
+            common: {name: 'shared', chunks: 'initial', minChunks: 2},
+          },
         },
       },
+      plugins: expectedPlugins,
     })
   })
 
@@ -189,6 +185,21 @@ describe('createConfig', () => {
     const config1 = createConfiguration({cssLoaders})
     const config2 = createConfiguration({cssLoaders, hotReload: true})
     expect(config1.module.rules).toEqual([
+      {
+        exclude: /node_modules/,
+        test: /\.[jt]sx?$/,
+        use: [
+          {
+            loader: 'awesome-typescript-loader',
+            options: {
+              useCache: false,
+              transpileOnly: true,
+              cacheDirectory: 'node_modules/.awcache',
+              forceIsolatedModules: true,
+            },
+          },
+        ],
+      },
       {
         test: /\.css$/,
         use: ExtractTextPlugin.extract({
@@ -206,6 +217,21 @@ describe('createConfig', () => {
     ])
     expect(config2.module.rules).toEqual([
       {
+        exclude: /node_modules/,
+        test: /\.[jt]sx?$/,
+        use: [
+          {
+            loader: 'awesome-typescript-loader',
+            options: {
+              useCache: true,
+              transpileOnly: true,
+              cacheDirectory: 'node_modules/.awcache',
+              forceIsolatedModules: true,
+            },
+          },
+        ],
+      },
+      {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
       },
@@ -219,7 +245,7 @@ describe('createConfig', () => {
   })
 
   it('should build with hot reload', () => {
-    expect(createConfiguration({useBabel: true, hotReload: true})).toEqual({
+    expect(createConfiguration({hotReload: true})).toEqual({
       ...expectedConfig,
       entry: {
         extra: ['webpack-hot-middleware/client', `.${sep}extra.ts`],
@@ -232,26 +258,50 @@ describe('createConfig', () => {
             test: /\.[jt]sx?$/,
             use: [
               {
-                loader: 'babel-loader',
+                loader: 'awesome-typescript-loader',
                 options: {
-                  cacheDirectory: true,
+                  useCache: true,
+                  transpileOnly: true,
+                  cacheDirectory: 'node_modules/.awcache',
+                  forceIsolatedModules: true,
                 },
               },
             ],
           },
         ],
       },
-      optimization: {
-        noEmitOnErrors: true,
+      optimization: {noEmitOnErrors: true},
+      plugins: [...expectedPlugins, new HotModuleReplacementPlugin()],
+    })
+  })
+
+  it('should build with tweaked awesome-typescript-loader options', () => {
+    expect(createConfiguration({
+      atlOptions: {useBabel: true, configFileName: 'tsconfig.other.json'},
+    })).toEqual({
+      ...expectedConfig,
+      module: {
+        rules: [
+          {
+            exclude: /node_modules/,
+            test: /\.[jt]sx?$/,
+            use: [
+              {
+                loader: 'awesome-typescript-loader',
+                options: {
+                  useCache: false,
+                  transpileOnly: true,
+                  cacheDirectory: 'node_modules/.awcache',
+                  forceIsolatedModules: true,
+                  useBabel: true,
+                  configFileName: 'tsconfig.other.json',
+                },
+              },
+            ],
+          },
+        ],
       },
-      plugins: [
-        new DefinePlugin({
-          'process.env.NODE_ENV': 'undefined',
-          'process.env.IS_CLIENT': '"true"',
-          'process.env.WEBPACK_BUILD': '"true"',
-        }),
-        new HotModuleReplacementPlugin(),
-      ],
+      plugins: expectedPlugins,
     })
   })
 })

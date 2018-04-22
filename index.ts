@@ -1,3 +1,4 @@
+import {LoaderConfig} from 'awesome-typescript-loader/dist/interfaces'
 import {F_OK} from 'constants'
 import * as CopyPlugin from 'copy-webpack-plugin'
 import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
@@ -20,7 +21,6 @@ import {
 import * as nodeExternals from 'webpack-node-externals'
 
 const ignoreGlobs = [
-  '!**/coverage/**',
   '!**/node_modules/**',
   '!**/*.d.ts',
   '!**/__tests__/**',
@@ -82,6 +82,8 @@ export interface Options {
   assets?: string
   /** Asset files to ignore when copying (defaults to pattern parameter) */
   assetsIgnore?: string[]
+  /** Overrides for awesome-typescript-loader */
+  atlOptions?: LoaderConfig
   /** Create a simple common chunk if multiple entries (defaults to false) */
   common?: string | boolean
   /** CSS loaders */
@@ -102,8 +104,6 @@ export interface Options {
   source?: string
   /** Webpack target (defaults to web) */
   target?: WebpackConfiguration['target']
-  /** If true then use Babel (defaults to false) */
-  useBabel?: boolean
 }
 
 /**
@@ -114,6 +114,7 @@ export interface Options {
 export function createConfiguration(options: Options = {}): Configuration {
   const {
     assets,
+    atlOptions = {},
     common = false,
     cssLoaders = [],
     destination = '',
@@ -123,10 +124,9 @@ export function createConfiguration(options: Options = {}): Configuration {
     filename = '[name]',
     hotReload = process.env.HOT_MODULES === 'true',
     log = () => undefined,
-    pattern = ['**/*.{j,t}s{,x}'],
+    pattern = ['**/*.ts{,x}'],
     source = '',
     target = 'web',
-    useBabel = false,
   } = options
   const {assetsIgnore: ignore = pattern} = options
 
@@ -145,7 +145,26 @@ export function createConfiguration(options: Options = {}): Configuration {
         ...obj,
         [join(dir, base)]: [file],
       }), {}),
-    module: {rules: []},
+    module: {
+      rules: [
+        {
+          test: /\.[jt]sx?$/,
+          exclude: /node_modules/,
+          use: [
+            {
+              loader: 'awesome-typescript-loader',
+              options: {
+                useCache: hotReload,
+                transpileOnly: true,
+                cacheDirectory: 'node_modules/.awcache',
+                forceIsolatedModules: true,
+                ...atlOptions,
+              },
+            },
+          ],
+        },
+      ],
+    },
     output: {
       path: resolve(destination),
       filename: `${filename}.js`,
@@ -164,25 +183,6 @@ export function createConfiguration(options: Options = {}): Configuration {
     target,
   }
   log('--- wcb: making base configuration')
-
-  // Use babel if available
-  if(useBabel) {
-    configuration = addRules(configuration, [
-      {
-        test: /\.[jt]sx?$/,
-        exclude: /node_modules/,
-        use: [
-          {
-            loader: 'babel-loader',
-            options: {
-              cacheDirectory: hotReload,
-            },
-          },
-        ],
-      },
-    ])
-    log('--- wcb: using babel-loader')
-  }
 
   // Add to configuration based on environment
   switch(environment) {
