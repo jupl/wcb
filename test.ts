@@ -127,27 +127,19 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with node', () => {
-    const {externals, ...config} = createConfiguration({target: 'node'})
-    expect(config).toEqual({
-      ...expectedConfig,
-      node: {
-        Buffer: false,
-        __dirname: false,
-        __filename: false,
-        global: false,
-        process: false,
-        setImmediate: false,
-      },
-      plugins: [
-        new DefinePlugin({
-          'process.env.IS_CLIENT': '"false"',
-          'process.env.NODE_ENV': 'undefined',
-          'process.env.WEBPACK_BUILD': '"true"',
-        }),
-      ],
-      target: 'node',
+    const config1 = createConfiguration({target: 'node'})
+    const config2 = createConfiguration({target: 'electron-renderer'})
+    expect(config1.node).toEqual(config2.node)
+    expect(config1.node).toEqual({
+      Buffer: false,
+      __dirname: false,
+      __filename: false,
+      global: false,
+      process: false,
+      setImmediate: false,
     })
-    expect(externals).toHaveLength(1)
+    expect(config1.externals).toHaveLength(1)
+    expect(config2.externals).toBeUndefined()
   })
 
   it('should build with common chunks', () => {
