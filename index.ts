@@ -1,8 +1,9 @@
 import {F_OK} from 'constants'
-import * as CopyPlugin from 'copy-webpack-plugin'
-import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
+import CopyPlugin from 'copy-webpack-plugin'
+import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {accessSync} from 'fs'
 import {find} from 'globule'
+import {flow} from 'lodash'
 import {basename, dirname, extname, join, resolve, sep} from 'path'
 import {
   Configuration as WebpackConfiguration,
@@ -11,99 +12,78 @@ import {
   Loader,
   LoaderOptionsPlugin,
   Module as OldModule,
-  NewUseRule,
   Output as WebpackOutput,
   Plugin,
   Resolve as OldResolve,
-  Rule,
+  RuleSetRule,
 } from 'webpack'
-import * as nodeExternals from 'webpack-node-externals'
+import nodeExternals from 'webpack-node-externals'
 
-const ignoreGlobs = [
+const ELECTRON_RENDERER_TARGET = 'electron-renderer'
+const IGNORE_GLOBS = [
   '!**/coverage/**',
   '!**/node_modules/**',
   '!**/*.d.ts',
   '!**/__tests__/**',
   '!**/{,*.}{test,spec}.*',
 ]
-const nonNodeTargets: WebpackConfiguration['target'][] = [
+const INVALID_ENVIRONMENT = '_-_|_-_'
+const NON_NODE_TARGETS: Target[] = [
   'web',
   'webworker',
-  'electron-renderer',
+  ELECTRON_RENDERER_TARGET,
 ]
 /* istanbul ignore next */
 const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
+type Target = WebpackConfiguration['target']
+
 /** Webpack entries */
 export interface Entry {
-  /** Each entry is a list of modules */
   [name: string]: string[]
 }
 
 /** Webpack output */
 export interface Output extends WebpackOutput {
-  /** Path is provided */
   path: string
-  /** Filename is provided */
   filename: string
-  /** Public path is provided */
   publicPath: string
 }
 
 /** Webpack module resolution */
 export interface Resolve extends OldResolve {
-  /** Extensions is provided */
   extensions: string[]
 }
 
 /** Webpack configuration specific for this application */
 export interface Configuration extends WebpackConfiguration {
-  /** Entries must be an object to list of modules */
   entry: Entry
-  /** Module follows Webpack 2 format */
   module: OldModule
-  /** Output is provided */
   output: Output
-  /** Plugins are specified */
   plugins: Plugin[]
-  /** Resolve options are specified */
   resolve: Resolve
 }
 
 /** Webpack loader for CSS family files */
-export interface CSSLoader extends NewUseRule {
-  /** Use must be a list of loaders */
+export interface CSSLoader extends RuleSetRule {
   use: Loader[]
 }
 
 /** Options for webpack build */
 export interface Options {
-  /** Path that contains static assets (defaults to no static assets) */
-  assets?: string
-  /** Asset files to ignore when copying (defaults to pattern parameter) */
+  assets?: string | false
   assetsIgnore?: string[]
-  /** Create a simple common chunk if multiple entries (defaults to false) */
   common?: string | boolean
-  /** CSS loaders */
   cssLoaders?: CSSLoader[]
-  /** Path to write output to (defaults to working path) */
   destination?: string
-  /** Environment to run under (defaults to NODE_ENV) */
   environment?: string
-  /** Output bundle name structure for JS/CSS (defaults to [name]) */
   filename?: string
-  /** If true then hot reload (defaults to HOT_RELOAD === 'true') */
   hotReload?: boolean
-  /** Log function */
-  log?(message: string): void
-  /** Glob patterns to match (defaults to all TS files recursively) */
   pattern?: string[]
-  /** Path that contains source files (defaults to working path) */
   source?: string
-  /** Webpack target (defaults to web) */
   target?: WebpackConfiguration['target']
-  /** If true then use Babel (defaults to false) */
   useBabel?: boolean
+  log?(message: string): void
 }
 
 /**
@@ -112,191 +92,17 @@ export interface Options {
  * @return Webpack configuration
  */
 export function createConfiguration(options: Options = {}): Configuration {
-  const {
-    assets,
-    common = false,
-    cssLoaders = [],
-    destination = '',
-    environment = process.env.NODE_ENV !== undefined
-      ? String(process.env.NODE_ENV)
-      : undefined,
-    filename = '[name]',
-    hotReload = process.env.HOT_MODULES === 'true',
-    log = () => undefined,
-    pattern = ['**/*.{j,t}s{,x}'],
-    source = '',
-    target = 'web',
-    useBabel = false,
-  } = options
-  const {assetsIgnore: ignore = pattern} = options
-
-  // Create base configuration
-  const nodeTarget = nonNodeTargets.indexOf(target) === -1
-  let configuration: Configuration = {
-    mode: 'none',
-    context: resolve(source),
-    entry: find([...pattern, ...ignoreGlobs], {srcBase: source})
-      .map(file => ({
-        file: `.${sep}${file}`,
-        base: basename(file, extname(file)),
-        dir: dirname(file),
-      }))
-      .reduce((obj, {base, dir, file}) => ({
-        ...obj,
-        [join(dir, base)]: [file],
-      }), {}),
-    module: {rules: []},
-    output: {
-      path: resolve(destination),
-      filename: `${filename}.js`,
-      publicPath: '/',
-    },
-    plugins: [
-      new DefinePlugin({
-        'process.env.IS_CLIENT': JSON.stringify(String(!nodeTarget)),
-        'process.env.NODE_ENV': environment !== undefined
-          ? JSON.stringify(environment)
-          : 'undefined',
-        'process.env.WEBPACK_BUILD': '"true"',
-      }),
-    ],
-    resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
-    target,
-  }
-  log('--- wcb: making base configuration')
-
-  // Use babel if available
-  if(useBabel) {
-    configuration = addRules(configuration, [
-      {
-        test: /\.[jt]sx?$/,
-        exclude: /node_modules/,
-        use: [
-          {
-            loader: 'babel-loader',
-            options: {
-              cacheDirectory: hotReload,
-            },
-          },
-        ],
-      },
-    ])
-    log('--- wcb: using babel-loader')
-  }
-
-  // Add to configuration based on environment
-  switch(environment) {
-  case 'development':
-    configuration = {
-      ...configuration,
-      devtool: 'inline-source-map',
-      output: {
-        ...configuration.output,
-        devtoolModuleFilenameTemplate: ({absoluteResourcePath}) =>
-          `${protocol}${absoluteResourcePath.split(sep).join('/')}`,
-      },
-    }
-    log('--- wcb: adding development configuration')
-    break
-  case 'production':
-    const BabelMinifyPlugin = require('babel-minify-webpack-plugin')
-    configuration = addPlugins(configuration, [
-      new LoaderOptionsPlugin({minimize: true, debug: false}),
-      new BabelMinifyPlugin(),
-    ])
-    log('--- wcb: adding production configuration')
-    break
-  default:
-    break
-  }
-
-  // Include assets if specified
-  if(assets !== undefined) {
-    try {
-      const from = resolve(assets)
-      accessSync(from, F_OK)
-      configuration = addPlugins(configuration, [
-        new CopyPlugin([{from, ignore}]),
-      ])
-      log('--- wcb: adding assets configuration')
-    }
-    catch(e) {
-      // Skip copy from assets
-    }
-  }
-
-  // Set up Node specifics if applicable
-  if(nodeTarget) {
-    configuration = {
-      ...configuration,
-      externals: [nodeExternals()],
-    }
-  }
-  if(nodeTarget || target === 'electron-renderer') {
-    configuration = {
-      ...configuration,
-      node: {
-        __dirname: false,
-        __filename: false,
-        global: false,
-        process: false,
-        Buffer: false,
-        setImmediate: false,
-      },
-    }
-    log('--- wcb: adding node configuration')
-  }
-
-  // Set up common chunk if applicable
-  if(common !== false && Object.keys(configuration.entry).length > 1) {
-    configuration = {
-      ...configuration,
-      optimization: {
-        ...configuration.optimization,
-        splitChunks: {
-          cacheGroups: {
-            common: {
-              name: common === true ? 'common' : common,
-              chunks: 'initial',
-              minChunks: 2,
-            },
-          },
-        },
-      },
-    }
-  }
-
-  // Set up CSS loaders if applicable
-  if(cssLoaders.length > 0) {
-    configuration = addRules(addPlugins(configuration, [
-      new ExtractTextPlugin({
-        allChunks: true,
-        disable: nodeTarget,
-        filename: `${filename}.css`,
-      }),
-    ]), cssLoaders.map(({use, ...rule}) => ({
-      ...rule,
-      use: hotReload
-        ? ['style-loader', ...use]
-        : ExtractTextPlugin.extract({use, fallback: 'style-loader'}),
-    })))
-  }
-
-  // Add hot reload support if specified
-  if(hotReload) {
-    configuration = addToEntries(addPlugins({
-      ...configuration,
-      optimization: {
-        ...configuration.optimization,
-        noEmitOnErrors: true,
-      },
-    }, [
-      new HotModuleReplacementPlugin(),
-    ]), ['webpack-hot-middleware/client'])
-    log('--- wcb: adding hot modules configuration')
-  }
-
-  return configuration
+  const internalOptions = optionsWithDefaults(options)
+  return flow([
+    addBabel(internalOptions),
+    addDevelopment(internalOptions),
+    addProduction(internalOptions),
+    addAssets(internalOptions),
+    addNode(internalOptions),
+    addCommonChunk(internalOptions),
+    addCssLoaders(internalOptions),
+    addHotReload(internalOptions),
+  ])(createBase(internalOptions))
 }
 
 /**
@@ -320,7 +126,7 @@ export function addPlugins(
  */
 export function addRules(
   configuration: Configuration,
-  rules: Rule[],
+  rules: RuleSetRule[],
 ): Configuration {
   return {
     ...configuration,
@@ -345,9 +151,233 @@ export function addToEntries(
     ...configuration,
     entry: Object.keys(configuration.entry)
       .filter(key => Array.isArray(configuration.entry[key]))
-      .reduce((previous, key) => ({
+      .reduce<Entry>((previous, key) => ({
         ...previous,
         [key]: [...modules, ...configuration.entry[key]],
       }), {}),
+  }
+}
+
+type InternalOptions = {
+  [P in keyof Options]-?: Options[P]
+}
+
+function createBase({
+  destination,
+  environment,
+  filename,
+  log,
+  pattern,
+  source,
+  target,
+}: InternalOptions): Configuration {
+  log('--- wcb: making base configuration')
+  const nodeTarget = NON_NODE_TARGETS.indexOf(target) === -1
+  return {
+    target,
+    context: resolve(source),
+    entry: find([...pattern, ...IGNORE_GLOBS], {srcBase: source})
+      .map(file => ({
+        base: basename(file, extname(file)),
+        dir: dirname(file),
+        file: `.${sep}${file}`,
+      }))
+      .reduce((obj, {base, dir, file}) => ({
+        ...obj, [join(dir, base)]: [file],
+      }), {}),
+    mode: 'none',
+    module: {rules: []},
+    output: {
+      filename: `${filename}.js`,
+      path: resolve(destination),
+      publicPath: '/',
+    },
+    plugins: [
+      new DefinePlugin({
+        'process.env.IS_CLIENT': JSON.stringify(String(!nodeTarget)),
+        'process.env.NODE_ENV': environment !== INVALID_ENVIRONMENT
+          ? JSON.stringify(environment)
+          : 'undefined',
+        'process.env.WEBPACK_BUILD': '"true"',
+      }),
+    ],
+    resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
+  }
+}
+
+function addAssets({assets, assetsIgnore: ignore, log}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(typeof assets !== 'string') { return configuration }
+    const from = resolve(assets)
+    try {
+      accessSync(from, F_OK)
+    }
+    catch(e) {
+      return configuration
+    }
+    log('--- wcb: adding assets configuration')
+    return addPlugins(configuration, [new CopyPlugin([{from, ignore}])])
+  }
+}
+
+function addBabel({hotReload, log, useBabel}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(!useBabel) { return configuration }
+    log('--- wcb: using babel-loader')
+    return addRules(configuration, [
+      {
+        exclude: /node_modules/,
+        test: /\.[jt]sx?$/,
+        use: [{loader: 'babel-loader', options: {cacheDirectory: hotReload}}],
+      },
+    ])
+  }
+}
+
+function addCommonChunk({common}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(common === false || Object.keys(configuration.entry).length === 0) {
+      return configuration
+    }
+    return {
+      ...configuration,
+      optimization: {
+        ...configuration.optimization,
+        splitChunks: {
+          cacheGroups: {
+            common: {
+              chunks: 'initial',
+              minChunks: 2,
+              name: common === true ? 'common' : common,
+            },
+          },
+        },
+      },
+    }
+  }
+}
+
+function addCssLoaders({
+  cssLoaders,
+  filename,
+  hotReload,
+  target,
+}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(cssLoaders.length === 0) { return configuration }
+    return addRules(addPlugins(configuration, [
+      new ExtractTextPlugin({
+        allChunks: true,
+        disable: isNodeTarget(target),
+        filename: `${filename}.css`,
+      }),
+    ]), cssLoaders.map(({use, ...rule}) => ({
+      ...rule,
+      use: hotReload
+        ? ['style-loader', ...use]
+        : ExtractTextPlugin.extract({use, fallback: 'style-loader'}),
+    })))
+  }
+}
+
+function addDevelopment({environment, log}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(environment !== 'development') { return configuration }
+    log('--- wcb: adding development configuration')
+    return {
+      ...configuration,
+      devtool: 'inline-source-map',
+      output: {
+        ...configuration.output,
+        devtoolModuleFilenameTemplate: ({absoluteResourcePath}) =>
+          `${protocol}${absoluteResourcePath.split(sep).join('/')}`,
+      },
+    }
+  }
+}
+
+function addHotReload({hotReload, log}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(!hotReload) { return configuration }
+    log('--- wcb: adding hot modules configuration')
+    return addToEntries(addPlugins({
+      ...configuration,
+      optimization: {...configuration.optimization, noEmitOnErrors: true},
+    }, [new HotModuleReplacementPlugin()]), ['webpack-hot-middleware/client'])
+  }
+}
+
+function addNode({log, target}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(!isNodeTarget(target) && target !== ELECTRON_RENDERER_TARGET) {
+      return configuration
+    }
+    log('--- wcb: adding node configuration')
+    const newConfiguration: Configuration = {
+      ...configuration,
+      node: {
+        Buffer: false,
+        __dirname: false,
+        __filename: false,
+        global: false,
+        process: false,
+        setImmediate: false,
+      },
+    }
+    return target !== ELECTRON_RENDERER_TARGET
+      ? {...newConfiguration, externals: [nodeExternals()]}
+      : newConfiguration
+  }
+}
+
+function addProduction({environment, log}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(environment !== 'production') { return configuration }
+    log('--- wcb: adding production configuration')
+    const BabelMinifyPlugin = require('babel-minify-webpack-plugin')
+    return addPlugins(configuration, [
+      new LoaderOptionsPlugin({minimize: true, debug: false}),
+      new BabelMinifyPlugin(),
+    ])
+  }
+}
+
+function isNodeTarget(target: Target) {
+  return NON_NODE_TARGETS.indexOf(target) === -1
+}
+
+function optionsWithDefaults(options: Options): InternalOptions {
+  const {
+    assets = false,
+    common = false,
+    cssLoaders = [],
+    destination = '',
+    environment = process.env.NODE_ENV !== undefined
+      ? String(process.env.NODE_ENV)
+      : INVALID_ENVIRONMENT,
+    filename = '[name]',
+    hotReload = process.env.HOT_MODULES === 'true',
+    log = () => undefined,
+    pattern = ['**/*.{j,t}s{,x}'],
+    source = '',
+    target = 'web',
+    useBabel = false,
+  } = options
+  const {assetsIgnore = pattern} = options
+  return {
+    ...options,
+    assets,
+    assetsIgnore,
+    common,
+    cssLoaders,
+    destination,
+    environment,
+    filename,
+    hotReload,
+    log,
+    pattern,
+    source,
+    target,
+    useBabel,
   }
 }

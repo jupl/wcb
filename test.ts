@@ -1,6 +1,6 @@
 // @ts-ignore
-import * as BabelMinifyPlugin from 'babel-minify-webpack-plugin'
-import * as ExtractTextPlugin from 'extract-text-webpack-plugin'
+import BabelMinifyPlugin from 'babel-minify-webpack-plugin'
+import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {sep} from 'path'
 import {
   Configuration,
@@ -9,15 +9,15 @@ import {
 } from 'webpack'
 import {CSSLoader, addRules, createConfiguration} from '.'
 
-// tslint:disable:no-magic-numbers
+// tslint:disable:no-duplicate-string no-magic-numbers
 
 const expectedConfig: Configuration = {
-  mode: 'none',
   context: __dirname,
   entry: {
     extra: [`.${sep}extra.ts`],
     index: [`.${sep}index.ts`],
   },
+  mode: 'none',
   module: {rules: []},
   output: {
     filename: '[name].js',
@@ -29,7 +29,7 @@ const expectedConfig: Configuration = {
 }
 const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
-describe('createConfig', () => {
+describe('createConfig', () => { // tslint:disable-line:no-big-function
   let env: string | undefined
 
   beforeAll(() => {
@@ -44,8 +44,8 @@ describe('createConfig', () => {
   it('should build with no environment', () => {
     expect(createConfiguration()).toEqual({...expectedConfig, plugins: [
       new DefinePlugin({
-        'process.env.NODE_ENV': 'undefined',
         'process.env.IS_CLIENT': '"true"',
+        'process.env.NODE_ENV': 'undefined',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
     ]})
@@ -56,7 +56,7 @@ describe('createConfig', () => {
       devtool,
       plugins,
       output: {devtoolModuleFilenameTemplate, ...output},
-      ...config,
+      ...config
     } = createConfiguration({environment: 'development'})
     const data = {absoluteResourcePath: `some${sep}path`}
     expect({...config, output}).toEqual(expectedConfig)
@@ -66,8 +66,8 @@ describe('createConfig', () => {
     expect(devtool).toEqual('inline-source-map')
     expect(plugins).toEqual([
       new DefinePlugin({
-        'process.env.NODE_ENV': '"development"',
         'process.env.IS_CLIENT': '"true"',
+        'process.env.NODE_ENV': '"development"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
     ])
@@ -81,8 +81,8 @@ describe('createConfig', () => {
     expect(plugins).toHaveLength(3)
     expect(plugins).toEqual(expect.arrayContaining([
       new DefinePlugin({
-        'process.env.NODE_ENV': '"production"',
         'process.env.IS_CLIENT': '"true"',
+        'process.env.NODE_ENV': '"production"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
       new (BabelMinifyPlugin as any)(), // tslint:disable-line:no-any
@@ -92,8 +92,8 @@ describe('createConfig', () => {
   it('should build with babel', () => {
     expect(createConfiguration({useBabel: true}).module.rules).toEqual([
       {
-        test: /\.[jt]sx?$/,
         exclude: /node_modules/,
+        test: /\.[jt]sx?$/,
         use: [
           {
             loader: 'babel-loader',
@@ -112,8 +112,8 @@ describe('createConfig', () => {
     expect(plugins).toHaveLength(2)
     expect(plugins).toEqual(expect.arrayContaining([
       new DefinePlugin({
-        'process.env.NODE_ENV': 'undefined',
         'process.env.IS_CLIENT': '"true"',
+        'process.env.NODE_ENV': 'undefined',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
     ]))
@@ -124,8 +124,8 @@ describe('createConfig', () => {
       ...expectedConfig,
       plugins: [
         new DefinePlugin({
-          'process.env.NODE_ENV': 'undefined',
           'process.env.IS_CLIENT': '"true"',
+          'process.env.NODE_ENV': 'undefined',
           'process.env.WEBPACK_BUILD': '"true"',
         }),
       ],
@@ -136,21 +136,21 @@ describe('createConfig', () => {
     const {externals, ...config} = createConfiguration({target: 'node'})
     expect(config).toEqual({
       ...expectedConfig,
-      plugins: [
-        new DefinePlugin({
-          'process.env.NODE_ENV': 'undefined',
-          'process.env.IS_CLIENT': '"false"',
-          'process.env.WEBPACK_BUILD': '"true"',
-        }),
-      ],
       node: {
+        Buffer: false,
         __dirname: false,
         __filename: false,
         global: false,
         process: false,
-        Buffer: false,
         setImmediate: false,
       },
+      plugins: [
+        new DefinePlugin({
+          'process.env.IS_CLIENT': '"false"',
+          'process.env.NODE_ENV': 'undefined',
+          'process.env.WEBPACK_BUILD': '"true"',
+        }),
+      ],
       target: 'node',
     })
     expect(externals).toHaveLength(1)
@@ -164,18 +164,18 @@ describe('createConfig', () => {
     expect(config1.optimization!.splitChunks).toEqual({
       cacheGroups: {
         common: {
-          name: 'common',
           chunks: 'initial',
           minChunks: 2,
+          name: 'common',
         },
       },
     })
     expect(config2.optimization!.splitChunks).toEqual({
       cacheGroups: {
         common: {
-          name: 'shared',
           chunks: 'initial',
           minChunks: 2,
+          name: 'shared',
         },
       },
     })
@@ -192,15 +192,15 @@ describe('createConfig', () => {
       {
         test: /\.css$/,
         use: ExtractTextPlugin.extract({
-          use: ['css-loader'],
           fallback: 'style-loader',
+          use: ['css-loader'],
         }),
       },
       {
         test: /\.scss$/,
         use: ExtractTextPlugin.extract({
-          use: ['css-loader', 'sass-loader'],
           fallback: 'style-loader',
+          use: ['css-loader', 'sass-loader'],
         }),
       },
     ])
@@ -246,8 +246,8 @@ describe('createConfig', () => {
       },
       plugins: [
         new DefinePlugin({
-          'process.env.NODE_ENV': 'undefined',
           'process.env.IS_CLIENT': '"true"',
+          'process.env.NODE_ENV': 'undefined',
           'process.env.WEBPACK_BUILD': '"true"',
         }),
         new HotModuleReplacementPlugin(),
