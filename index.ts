@@ -1,3 +1,4 @@
+import {LoaderConfig} from 'awesome-typescript-loader/dist/interfaces'
 import {F_OK} from 'constants'
 import CopyPlugin from 'copy-webpack-plugin'
 import ExtractTextPlugin from 'extract-text-webpack-plugin'
@@ -73,6 +74,7 @@ export interface CSSLoader extends RuleSetRule {
 export interface Options {
   assets?: string | false
   assetsIgnore?: string[]
+  atlOptions?: LoaderConfig
   common?: string | boolean
   cssLoaders?: CSSLoader[]
   destination?: string
@@ -82,7 +84,6 @@ export interface Options {
   pattern?: string[]
   source?: string
   target?: WebpackConfiguration['target']
-  useBabel?: boolean
   log?(message: string): void
 }
 
@@ -94,7 +95,6 @@ export interface Options {
 export function createConfiguration(options: Options = {}): Configuration {
   const internalOptions = optionsWithDefaults(options)
   return flow([
-    addBabel(internalOptions),
     addDevelopment(internalOptions),
     addProduction(internalOptions),
     addAssets(internalOptions),
@@ -163,9 +163,11 @@ type InternalOptions = {
 }
 
 function createBase({
+  atlOptions,
   destination,
   environment,
   filename,
+  hotReload,
   log,
   pattern,
   source,
@@ -186,7 +188,26 @@ function createBase({
         ...obj, [join(dir, base)]: [file],
       }), {}),
     mode: 'none',
-    module: {rules: []},
+    module: {
+      rules: [
+        {
+          exclude: /node_modules/,
+          test: /\.[jt]sx?$/,
+          use: [
+            {
+              loader: 'awesome-typescript-loader',
+              options: {
+                cacheDirectory: 'node_modules/.awcache',
+                forceIsolatedModules: true,
+                transpileOnly: true,
+                useCache: hotReload,
+                ...atlOptions,
+              },
+            },
+          ],
+        },
+      ],
+    },
     output: {
       filename: `${filename}.js`,
       path: resolve(destination),
@@ -217,20 +238,6 @@ function addAssets({assets, assetsIgnore: ignore, log}: InternalOptions) {
     }
     log('--- wcb: adding assets configuration')
     return addPlugins(configuration, [new CopyPlugin([{from, ignore}])])
-  }
-}
-
-function addBabel({hotReload, log, useBabel}: InternalOptions) {
-  return (configuration: Configuration): Configuration => {
-    if(!useBabel) { return configuration }
-    log('--- wcb: using babel-loader')
-    return addRules(configuration, [
-      {
-        exclude: /node_modules/,
-        test: /\.[jt]sx?$/,
-        use: [{loader: 'babel-loader', options: {cacheDirectory: hotReload}}],
-      },
-    ])
   }
 }
 
@@ -349,6 +356,7 @@ function isNodeTarget(target: Target) {
 function optionsWithDefaults(options: Options): InternalOptions {
   const {
     assets = false,
+    atlOptions = {},
     common = false,
     cssLoaders = [],
     destination = '',
@@ -361,13 +369,13 @@ function optionsWithDefaults(options: Options): InternalOptions {
     pattern = ['**/*.{j,t}s{,x}'],
     source = '',
     target = 'web',
-    useBabel = false,
   } = options
   const {assetsIgnore = pattern} = options
   return {
     ...options,
     assets,
     assetsIgnore,
+    atlOptions,
     common,
     cssLoaders,
     destination,
@@ -378,6 +386,5 @@ function optionsWithDefaults(options: Options): InternalOptions {
     pattern,
     source,
     target,
-    useBabel,
   }
 }

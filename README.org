@@ -7,16 +7,12 @@
 [[https://david-dm.org/jupl/wcb?type=dev][file:https://img.shields.io/david/dev/jupl/wcb.svg?style=flat-square]]
 
 ** About
-Personal [[https://webpack.js.org/][Webpack]] config builder with support for [[https://babeljs.io/][Babel]].
+Personal [[https://webpack.js.org/][Webpack]] config builder, targeted specifically for [[https://www.typescriptlang.org/][TypeScript]].
 
 ** Installation
 #+BEGIN_EXAMPLE
-npm install wcb webpack
-npm install @babel/core # Required for useBabel option
+npm install typescript wcb webpack
 #+END_EXAMPLE
-
-** TypeScript
-TypeScript files will be picked up automatically for [[https://github.com/babel/babel-loader][babel-loader]] if Babel is used. If so make sure to use [[https://github.com/babel/babel/tree/master/packages/babel-preset-typescript][@babel/preset-typescript]].
 
 ** Usage
 #+BEGIN_SRC typescript
@@ -54,6 +50,8 @@ Given an existing configuration from ~createConfiguration~, load additional Node
 Path that contains static files to copy over to the final build. If path is relative, it is relative to ~process.cwd()~. If not specified no static files are copied over.
 *** ~assetsIgnore: string[] = pattern~
 Glob patterns indicating files to ignore when using the ~assets~ option. By default it uses the ~pattern~ option.
+*** ~atlOptions?: object~
+Additional options in [[https://github.com/s-panferov/awesome-typescript-loader][awesome-typescript-loader]] to override.
 *** ~cssLoaders: Loader[] = []~
 List of CSS [[https://webpack.js.org/configuration/module/#rule][loaders]] to incorporate. =extract-text-webpack-plugin= is used by default, whereas =style-loader= is used for hot reloading. Do *NOT* use =extract-text-webpack-plugin= nor =style-loader= as it will automatically be included.
 *** ~common: string | boolean = false~
@@ -68,11 +66,9 @@ Environment to build under. Currently "development" and "production" is supporte
 If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled.
 *** ~log?: (message: string) => void~
 If a function is provided it will be called for logging. Otherwise nothing is logged.
-*** ~pattern: string[] = ['**/*.{j,t}s{,x}']~
-Glob patterns to pick up as entry points relative to ~source~.
+*** ~pattern: string[] = ['**/*.ts{,x}']~
+Glob patterns to pick up as entry points relative to ~source~. If you want to use JavaScript as entry points then instead of ~ts{,x}~ use ~{j,t}s{,x}~.
 *** ~source: string = process.cwd()~
 Path where source files will be used for building. If path is relative, it is relative to ~process.cwd()~.
 *** ~target: string = 'web'~
 [[https://webpack.js.org/configuration/target/][Webpack targets]] to build to.
-*** ~useBabel: boolean = false~
-If enabled then post-process files with Babel using [[https://github.com/babel/babel-loader][babel-loader]].
