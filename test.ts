@@ -8,7 +8,7 @@ import {
   HotModuleReplacementPlugin,
   Plugin,
 } from 'webpack'
-import {CSSLoader, addRules, createConfiguration} from '.'
+import {CSSLoader, addRules, createConfiguration} from './src'
 
 // tslint:disable:no-duplicate-string no-magic-numbers
 
@@ -16,7 +16,7 @@ const expectedConfig: Configuration = {
   context: __dirname,
   entry: {
     extra: [`.${sep}extra.ts`],
-    index: [`.${sep}index.ts`],
+    'src/index': [`.${sep}src${sep}index.ts`],
   },
   mode: 'none',
   module: {
@@ -241,7 +241,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       ...expectedConfig,
       entry: {
         extra: [`.${sep}extra.ts`],
-        index: [`.${sep}index.ts`],
+        'src/index': [`.${sep}src${sep}index.ts`],
       },
       module: {
         rules: [
@@ -272,7 +272,10 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       ...expectedConfig,
       entry: {
         extra: ['webpack-hot-middleware/client', `.${sep}extra.ts`],
-        index: ['webpack-hot-middleware/client', `.${sep}index.ts`],
+        'src/index': [
+          'webpack-hot-middleware/client',
+          `.${sep}src${sep}index.ts`,
+        ],
       },
       module: {
         rules: [

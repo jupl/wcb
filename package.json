@@ -14,6 +14,7 @@
   },
   "main": "index.js",
   "scripts": {
+    "build": "tsc --project tsconfig.build.json",
     "clean": "trash '*.js' '*.d.ts' '*.map'",
     "coverage": "npm run test -- --coverage",
     "coverage:watch": "npm run coverage -- --watch",
@@ -22,7 +23,7 @@
     "lint:file": "tslint --project tsconfig.json",
     "test": "npm run clean && jest --config .jestrc.json",
     "test:watch": "npm run test -- --watch",
-    "pub": "npm run clean && tsc --project tsconfig.build.json && npm publish"
+    "pub": "npm run clean && npm run build && npm publish"
   },
   "dependencies": {
     "awesome-typescript-loader": "^5.2.1",
