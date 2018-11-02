@@ -1,17 +1,22 @@
 {
   "compilerOptions": {
     "declaration": true,
+    "declarationMap": true,
     "esModuleInterop": true,
     "maxNodeModuleJsDepth": 1,
     "module": "commonjs",
     "moduleResolution": "node",
+    "noEmit": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "plugins": [
-      {"name": "tslint-language-service"}
+      {"name": "typescript-tslint-plugin"}
     ],
+    "removeComments": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
     "strict": true,
     "target": "es2015"
   }

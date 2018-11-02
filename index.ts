@@ -80,7 +80,7 @@ export interface Options {
   destination?: string
   environment?: string
   filename?: string
-  hotReload?: boolean
+  hotReload?: 'none' | 'middleware' | 'server'
   pattern?: string[]
   source?: string
   target?: WebpackConfiguration['target']
@@ -200,7 +200,7 @@ function createBase({
                 cacheDirectory: 'node_modules/.awcache',
                 forceIsolatedModules: true,
                 transpileOnly: true,
-                useCache: hotReload,
+                useCache: hotReload !== 'none',
                 ...atlOptions,
               },
             },
@@ -280,7 +280,7 @@ function addCssLoaders({
       }),
     ]), cssLoaders.map(({use, ...rule}) => ({
       ...rule,
-      use: hotReload
+      use: hotReload !== 'none'
         ? ['style-loader', ...use]
         : ExtractTextPlugin.extract({use, fallback: 'style-loader'}),
     })))
@@ -305,12 +305,15 @@ function addDevelopment({environment, log}: InternalOptions) {
 
 function addHotReload({hotReload, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(!hotReload) { return configuration }
+    if(hotReload === 'none') { return configuration }
     log('--- wcb: adding hot modules configuration')
-    return addToEntries(addPlugins({
+    const newConfiguration = addPlugins({
       ...configuration,
       optimization: {...configuration.optimization, noEmitOnErrors: true},
-    }, [new HotModuleReplacementPlugin()]), ['webpack-hot-middleware/client'])
+    }, [new HotModuleReplacementPlugin()])
+    return hotReload === 'middleware'
+      ? addToEntries(newConfiguration, ['webpack-hot-middleware/client'])
+      : newConfiguration
   }
 }
 
@@ -364,7 +367,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
       ? String(process.env.NODE_ENV)
       : INVALID_ENVIRONMENT,
     filename = '[name]',
-    hotReload = process.env.HOT_MODULES === 'true',
+    hotReload = 'none',
     log = () => undefined,
     pattern = ['**/*.{j,t}s{,x}'],
     source = '',

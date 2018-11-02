@@ -1,6 +1,6 @@
 {
   "name": "wcb",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Personal Webpack config builder",
   "author": "jupl",
   "license": "MIT",
@@ -14,24 +14,24 @@
   },
   "main": "index.js",
   "scripts": {
-    "clean": "trash '*.js' '*.d.ts'",
+    "clean": "trash '*.js' '*.d.ts' '*.map'",
     "coverage": "npm run test -- --coverage",
     "coverage:watch": "npm run coverage -- --watch",
     "codecov": "npm run coverage && codecov",
-    "lint": "npm run lint:file && tsc --noEmit",
+    "lint": "tsc && npm run lint:file",
     "lint:file": "tslint --project tsconfig.json",
-    "test": "npm run clean && jest",
+    "test": "npm run clean && jest --config .jestrc.json",
     "test:watch": "npm run test -- --watch",
     "pub": "npm run clean && tsc --project tsconfig.build.json && npm publish"
   },
   "dependencies": {
-    "awesome-typescript-loader": "^5.0.0",
+    "awesome-typescript-loader": "^5.2.1",
     "babel-minify-webpack-plugin": "^0.3.1",
-    "copy-webpack-plugin": "^4.5.1",
+    "copy-webpack-plugin": "^4.6.0",
     "extract-text-webpack-plugin": "^4.0.0-beta.0",
-    "globule": "^1.1.0",
-    "lodash": "^4.17.10",
-    "style-loader": "^0.21.0",
+    "globule": "^1.2.1",
+    "lodash": "^4.17.11",
+    "style-loader": "^0.23.1",
     "webpack-node-externals": "^1.7.2"
   },
   "peerDependencies": {
@@ -39,39 +39,25 @@
   },
   "devDependencies": {
     "@jupl/tslint-config": "^0.5.1",
-    "@types/copy-webpack-plugin": "^4.4.1",
+    "@types/copy-webpack-plugin": "^4.4.2",
     "@types/extract-text-webpack-plugin": "^3.0.3",
     "@types/globule": "^1.1.3",
-    "@types/jest": "^22.2.3",
-    "@types/lodash": "^4.14.109",
-    "@types/node": "^10.1.3",
-    "@types/webpack": "^4.4.0",
+    "@types/jest": "^23.3.9",
+    "@types/lodash": "^4.14.117",
+    "@types/node": "^10.12.2",
+    "@types/webpack": "^4.4.17",
     "@types/webpack-node-externals": "^1.6.3",
-    "codecov": "^3.0.2",
-    "istanbul-api": "^1.3.2",
-    "istanbul-reports": "^1.4.0",
-    "jest": "^23.0.1",
-    "jest-cli": "^23.0.1",
+    "codecov": "^3.1.0",
+    "jest": "^23.6.0",
+    "jest-cli": "^23.6.0",
     "trash-cli": "^1.4.0",
-    "ts-jest": "^22.4.6",
-    "tslint": "^5.10.0",
-    "tslint-eslint-rules": "^5.3.1",
-    "tslint-immutable": "^4.5.4",
-    "tslint-language-service": "^0.9.9",
-    "tslint-sonarts": "^1.6.0",
-    "typescript": "^2.8.3",
-    "webpack": "^4.10.1"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts",
-      "tsx"
-    ],
-    "testRegex": "(/__tests__/.*|[./](test|spec))\\.tsx?$",
-    "transform": {
-      ".tsx?": "<rootDir>/node_modules/ts-jest/preprocessor.js"
-    }
+    "ts-jest": "^23.10.4",
+    "tslint": "^5.11.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "tslint-immutable": "^4.9.0",
+    "tslint-sonarts": "^1.8.0",
+    "typescript": "^3.1.6",
+    "typescript-tslint-plugin": "0.0.4",
+    "webpack": "^4.23.1"
   }
 }

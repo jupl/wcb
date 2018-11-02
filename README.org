@@ -62,8 +62,8 @@ Path where generated JS files will be placed in final build. If path is relative
 Environment to build under. Currently "development" and "production" is supported.
 *** ~filename: string = '[name]'~
 [[https://webpack.js.org/configuration/output/#output-filename][Output bundle filename structure]] for JS/CSS. This is useful for [[https://webpack.js.org/guides/caching/][caching]] strategies.
-*** ~hotReload: boolean = process.env.HOT_MODULES === 'true'~
-If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled.
+*** ~hotReload: 'none' | 'middleware' | 'server' = 'none'~
+If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled. If using =webpack-dev-server= then use the ~server~ option. Otherwise if using =webpack-dev-middleware= or similar then use the ~middleware~ option.
 *** ~log?: (message: string) => void~
 If a function is provided it will be called for logging. Otherwise nothing is logged.
 *** ~pattern: string[] = ['**/*.ts{,x}']~

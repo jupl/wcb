@@ -175,7 +175,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
     ]
     const config1 = createConfiguration({cssLoaders})
-    const config2 = createConfiguration({cssLoaders, hotReload: true})
+    const config2 = createConfiguration({cssLoaders, hotReload: 'server'})
     expect(config1.module.rules).toEqual([
       {
         exclude: /node_modules/,
@@ -236,8 +236,39 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     expect(config2.plugins).toHaveLength(3)
   })
 
-  it('should build with hot reload', () => {
-    expect(createConfiguration({hotReload: true})).toEqual({
+  it('should build with hot reload from server', () => {
+    expect(createConfiguration({hotReload: 'server'})).toEqual({
+      ...expectedConfig,
+      entry: {
+        extra: [`.${sep}extra.ts`],
+        index: [`.${sep}index.ts`],
+      },
+      module: {
+        rules: [
+          {
+            exclude: /node_modules/,
+            test: /\.[jt]sx?$/,
+            use: [
+              {
+                loader: 'awesome-typescript-loader',
+                options: {
+                  cacheDirectory: 'node_modules/.awcache',
+                  forceIsolatedModules: true,
+                  transpileOnly: true,
+                  useCache: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      optimization: {noEmitOnErrors: true},
+      plugins: [...expectedPlugins, new HotModuleReplacementPlugin()],
+    })
+  })
+
+  it('should build with hot reload from middleware', () => {
+    expect(createConfiguration({hotReload: 'middleware'})).toEqual({
       ...expectedConfig,
       entry: {
         extra: ['webpack-hot-middleware/client', `.${sep}extra.ts`],
