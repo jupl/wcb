@@ -1,9 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmit": false
+    "noEmit": false,
+    "outDir": "."
   },
   "files": [
-    "index.ts"
+    "src/index.ts"
   ]
 }
