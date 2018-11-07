@@ -82,6 +82,7 @@ export interface Options {
   hotReload?: 'none' | 'middleware' | 'server'
   pattern?: string[]
   source?: string
+  sourceMaps?: boolean
   target?: WebpackConfiguration['target']
   log?(message: string): void
 }
@@ -94,7 +95,7 @@ export interface Options {
 export function createConfiguration(options: Options = {}): Configuration {
   const internalOptions = optionsWithDefaults(options)
   return flow([
-    addDevelopment(internalOptions),
+    addSourceMaps(internalOptions),
     addProduction(internalOptions),
     addAssets(internalOptions),
     addNode(internalOptions),
@@ -157,9 +158,7 @@ export function addToEntries(
   }
 }
 
-type InternalOptions = {
-  [P in keyof Options]-?: Options[P]
-}
+type InternalOptions = { [P in keyof Options]-?: Options[P] }
 
 function createBase({
   atlOptions,
@@ -286,16 +285,16 @@ function addCssLoaders({
   }
 }
 
-function addDevelopment({environment, log}: InternalOptions) {
+function addSourceMaps({sourceMaps, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(environment !== 'development') { return configuration }
-    log('--- wcb: adding development configuration')
+    if(!sourceMaps) { return configuration }
+    log('--- wcb: adding source maps')
     return {
       ...configuration,
       devtool: 'source-map',
       output: {
         ...configuration.output,
-        devtoolModuleFilenameTemplate,
+        devtoolModuleFilenameTemplate: fixPath,
       },
     }
   }
@@ -371,9 +370,11 @@ function optionsWithDefaults(options: Options): InternalOptions {
     source = '',
     target = 'web',
   } = options
-  const {assetsIgnore = pattern} = options
+  const {
+    assetsIgnore = pattern,
+    sourceMaps = environment === 'development',
+  } = options
   return {
-    ...options,
     assets,
     assetsIgnore,
     atlOptions,
@@ -386,13 +387,12 @@ function optionsWithDefaults(options: Options): InternalOptions {
     log,
     pattern,
     source,
+    sourceMaps,
     target,
   }
 }
 
-function devtoolModuleFilenameTemplate({
-  absoluteResourcePath,
-}: DevtoolModuleFilenameTemplateInfo) {
+function fixPath({absoluteResourcePath}: DevtoolModuleFilenameTemplateInfo) {
   const protocol = isAbsolute(absoluteResourcePath) ? 'file' : 'webpack'
   const path = absoluteResourcePath.split(sep).join('/')
   return `${protocol}://${path.startsWith('/') ? '' : '/'}${path}`
