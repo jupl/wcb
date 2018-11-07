@@ -5,10 +5,11 @@ import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {accessSync} from 'fs'
 import {find} from 'globule'
 import {flow} from 'lodash'
-import {basename, dirname, extname, join, resolve, sep} from 'path'
+import {basename, dirname, extname, isAbsolute, join, resolve, sep} from 'path'
 import {
   Configuration as WebpackConfiguration,
   DefinePlugin,
+  DevtoolModuleFilenameTemplateInfo,
   HotModuleReplacementPlugin,
   Loader,
   LoaderOptionsPlugin,
@@ -34,8 +35,6 @@ const NON_NODE_TARGETS: Target[] = [
   'webworker',
   ELECTRON_RENDERER_TARGET,
 ]
-/* istanbul ignore next */
-const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
 type Target = WebpackConfiguration['target']
 
@@ -293,11 +292,10 @@ function addDevelopment({environment, log}: InternalOptions) {
     log('--- wcb: adding development configuration')
     return {
       ...configuration,
-      devtool: 'inline-source-map',
+      devtool: 'source-map',
       output: {
         ...configuration.output,
-        devtoolModuleFilenameTemplate: ({absoluteResourcePath}) =>
-          `${protocol}${absoluteResourcePath.split(sep).join('/')}`,
+        devtoolModuleFilenameTemplate,
       },
     }
   }
@@ -390,4 +388,12 @@ function optionsWithDefaults(options: Options): InternalOptions {
     source,
     target,
   }
+}
+
+function devtoolModuleFilenameTemplate({
+  absoluteResourcePath,
+}: DevtoolModuleFilenameTemplateInfo) {
+  const protocol = isAbsolute(absoluteResourcePath) ? 'file' : 'webpack'
+  const path = absoluteResourcePath.split(sep).join('/')
+  return `${protocol}://${path.startsWith('/') ? '' : '/'}${path}`
 }

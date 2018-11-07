@@ -1,4 +1,5 @@
 *.json
+.coverage
 .editorconfig
 .gitignore
 .travis.yml

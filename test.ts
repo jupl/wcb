@@ -53,7 +53,6 @@ const expectedPlugins: Plugin[] = [
     'process.env.WEBPACK_BUILD': '"true"',
   }),
 ]
-const protocol = process.platform === 'win32' ? 'file:///' : 'file://'
 
 describe('createConfig', () => { // tslint:disable-line:no-big-function
   let env: string | undefined
@@ -81,12 +80,15 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       output: {devtoolModuleFilenameTemplate, ...output},
       ...config
     } = createConfiguration({environment: 'development'})
-    const data = {absoluteResourcePath: `some${sep}path`}
     expect({...config, output}).toEqual(expectedConfig)
     expect(devtoolModuleFilenameTemplate).toBeInstanceOf(Function)
-    expect((devtoolModuleFilenameTemplate as Function)(data))
-      .toEqual(`${protocol}some/path`)
-    expect(devtool).toEqual('inline-source-map')
+    expect((devtoolModuleFilenameTemplate as Function)({
+      absoluteResourcePath: `some/path`,
+    })).toEqual('webpack:///some/path')
+    expect((devtoolModuleFilenameTemplate as Function)({
+      absoluteResourcePath: `/some/path`,
+    })).toEqual('file:///some/path')
+    expect(devtool).toEqual('source-map')
     expect(plugins).toEqual([
       new DefinePlugin({
         'process.env.IS_CLIENT': '"true"',

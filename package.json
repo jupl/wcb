@@ -1,6 +1,6 @@
 {
   "name": "wcb",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Personal Webpack config builder",
   "author": "jupl",
   "license": "MIT",
@@ -22,6 +22,7 @@
     "lint": "tsc && npm run lint:file",
     "lint:file": "tslint --project tsconfig.json",
     "test": "npm run clean && jest --config .jestrc.json",
+    "test:update": "npm run test -- -u",
     "test:watch": "npm run test -- --watch",
     "pub": "npm run clean && npm run build && npm publish"
   },
