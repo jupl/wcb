@@ -12,8 +12,17 @@ import {CSSLoader, addRules, createConfiguration} from './src'
 
 // tslint:disable:no-duplicate-string no-magic-numbers
 
+const fixPath = createConfiguration().output.devtoolModuleFilenameTemplate
+const cssLoaders: CSSLoader[] = [
+  {test: /\.css$/, use: ['css-loader']},
+  {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
+]
+const devServer: Configuration['devServer'] = {
+  stats: {all: false, builtAt: true, errors: true},
+}
 const expectedConfig: Configuration = {
   context: __dirname,
+  devtool: 'source-map',
   entry: {
     extra: [`.${sep}extra.ts`],
     'src/index': [`.${sep}src${sep}index.ts`],
@@ -39,6 +48,7 @@ const expectedConfig: Configuration = {
     ],
   },
   output: {
+    devtoolModuleFilenameTemplate: fixPath,
     filename: '[name].js',
     path: __dirname,
     publicPath: '/',
@@ -66,21 +76,10 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     process.env.NODE_ENV = env // tslint:disable-line:no-object-mutation
   })
 
-  it('should build with no environment', () => {
-    expect(createConfiguration()).toEqual({
-      ...expectedConfig,
-      plugins: expectedPlugins,
-    })
-  })
-
-  it('should build with development environment', () => {
-    const {
-      devtool,
-      plugins,
-      output: {devtoolModuleFilenameTemplate, ...output},
-      ...config
-    } = createConfiguration({environment: 'development'})
-    expect({...config, output}).toEqual(expectedConfig)
+  it('should build with base options', () => {
+    const config = createConfiguration()
+    expect(config).toEqual({...expectedConfig, plugins: expectedPlugins})
+    const {output: {devtoolModuleFilenameTemplate}} = config
     expect(devtoolModuleFilenameTemplate).toBeInstanceOf(Function)
     expect((devtoolModuleFilenameTemplate as Function)({
       absoluteResourcePath: `some/path`,
@@ -88,30 +87,36 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     expect((devtoolModuleFilenameTemplate as Function)({
       absoluteResourcePath: `/some/path`,
     })).toEqual('file:///some/path')
-    expect(devtool).toEqual('source-map')
-    expect(plugins).toEqual([
-      new DefinePlugin({
-        'process.env.IS_CLIENT': '"true"',
-        'process.env.NODE_ENV': '"development"',
-        'process.env.WEBPACK_BUILD': '"true"',
-      }),
-    ])
   })
 
   it('should build with production environment', () => {
-    const {plugins, ...config} = createConfiguration({
+    const {plugins: plugins1, ...config} = createConfiguration({
       environment: 'production',
     })
-    expect(config).toEqual(expectedConfig)
-    expect(plugins).toHaveLength(3)
-    expect(plugins).toEqual(expect.arrayContaining([
+    const {plugins: plugins2} = createConfiguration({
+      cssLoaders,
+      environment: 'production',
+    })
+    const sharedPlugins = [
       new DefinePlugin({
         'process.env.IS_CLIENT': '"true"',
         'process.env.NODE_ENV': '"production"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
       new (BabelMinifyPlugin as any)(), // tslint:disable-line:no-any
-    ]))
+    ]
+    expect(config).toEqual({
+      ...expectedConfig,
+      devtool: undefined,
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: undefined,
+      },
+    })
+    expect(plugins1).toHaveLength(3)
+    expect(plugins2).toHaveLength(5)
+    expect(plugins1).toEqual(expect.arrayContaining(sharedPlugins))
+    expect(plugins2).toEqual(expect.arrayContaining(sharedPlugins))
   })
 
   it('should build with assets', () => {
@@ -172,28 +177,10 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with CSS loaders', () => {
-    const cssLoaders: CSSLoader[] = [
-      {test: /\.css$/, use: ['css-loader']},
-      {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
-    ]
     const config1 = createConfiguration({cssLoaders})
-    const config2 = createConfiguration({cssLoaders, hotReload: 'server'})
+    const config2 = createConfiguration({cssLoaders, hotReload: true})
     expect(config1.module.rules).toEqual([
-      {
-        exclude: /node_modules/,
-        test: /\.[jt]sx?$/,
-        use: [
-          {
-            loader: 'awesome-typescript-loader',
-            options: {
-              cacheDirectory: 'node_modules/.awcache',
-              forceIsolatedModules: true,
-              transpileOnly: true,
-              useCache: false,
-            },
-          },
-        ],
-      },
+      ...expectedConfig.module!.rules,
       {
         test: /\.css$/,
         use: ExtractTextPlugin.extract({
@@ -238,13 +225,9 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     expect(config2.plugins).toHaveLength(3)
   })
 
-  it('should build with hot reload from server', () => {
-    expect(createConfiguration({hotReload: 'server'})).toEqual({
+  it('should build with hot reload', () => {
+    const localExpectedConfig = {
       ...expectedConfig,
-      entry: {
-        extra: [`.${sep}extra.ts`],
-        'src/index': [`.${sep}src${sep}index.ts`],
-      },
       module: {
         rules: [
           {
@@ -266,12 +249,9 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       },
       optimization: {noEmitOnErrors: true},
       plugins: [...expectedPlugins, new HotModuleReplacementPlugin()],
-    })
-  })
-
-  it('should build with hot reload from middleware', () => {
-    expect(createConfiguration({hotReload: 'middleware'})).toEqual({
-      ...expectedConfig,
+    }
+    expect(createConfiguration({hotReload: true})).toEqual({
+      ...localExpectedConfig,
       entry: {
         extra: ['webpack-hot-middleware/client', `.${sep}extra.ts`],
         'src/index': [
@@ -279,27 +259,10 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
           `.${sep}src${sep}index.ts`,
         ],
       },
-      module: {
-        rules: [
-          {
-            exclude: /node_modules/,
-            test: /\.[jt]sx?$/,
-            use: [
-              {
-                loader: 'awesome-typescript-loader',
-                options: {
-                  cacheDirectory: 'node_modules/.awcache',
-                  forceIsolatedModules: true,
-                  transpileOnly: true,
-                  useCache: true,
-                },
-              },
-            ],
-          },
-        ],
-      },
-      optimization: {noEmitOnErrors: true},
-      plugins: [...expectedPlugins, new HotModuleReplacementPlugin()],
+    })
+    expect(createConfiguration({devServer: true, hotReload: true})).toEqual({
+      ...localExpectedConfig,
+      devServer: {...devServer, hot: true},
     })
   })
 
@@ -329,6 +292,14 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
           },
         ],
       },
+      plugins: expectedPlugins,
+    })
+  })
+
+  it('should build with dev server', () => {
+    expect(createConfiguration({devServer: true})).toEqual({
+      ...expectedConfig,
+      devServer,
       plugins: expectedPlugins,
     })
   })

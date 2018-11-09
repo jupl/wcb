@@ -5,23 +5,11 @@ import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {accessSync} from 'fs'
 import {find} from 'globule'
 import {flow} from 'lodash'
-import {basename, dirname, extname, isAbsolute, join, resolve, sep} from 'path'
-import {
-  Configuration as WebpackConfiguration,
-  DefinePlugin,
-  DevtoolModuleFilenameTemplateInfo,
-  HotModuleReplacementPlugin,
-  Loader,
-  LoaderOptionsPlugin,
-  Module as OldModule,
-  Output as WebpackOutput,
-  Plugin,
-  Resolve as OldResolve,
-  RuleSetRule,
-} from 'webpack'
+import * as path from 'path'
+import * as Webpack from 'webpack'
 import nodeExternals from 'webpack-node-externals'
 
-const ELECTRON_RENDERER_TARGET = 'electron-renderer'
+const ELECTRON_RENDERER = 'electron-renderer'
 const IGNORE_GLOBS = [
   '!**/coverage/**',
   '!**/node_modules/**',
@@ -30,13 +18,9 @@ const IGNORE_GLOBS = [
   '!**/{,*.}{test,spec}.*',
 ]
 const INVALID_ENVIRONMENT = '_-_|_-_'
-const NON_NODE_TARGETS: Target[] = [
-  'web',
-  'webworker',
-  ELECTRON_RENDERER_TARGET,
-]
+const NON_NODE_TARGETS: Target[] = ['web', 'webworker']
 
-type Target = WebpackConfiguration['target']
+type Target = Webpack.Configuration['target']
 
 /** Webpack entries */
 export interface Entry {
@@ -44,29 +28,29 @@ export interface Entry {
 }
 
 /** Webpack output */
-export interface Output extends WebpackOutput {
+export interface Output extends Webpack.Output {
   path: string
   filename: string
   publicPath: string
 }
 
 /** Webpack module resolution */
-export interface Resolve extends OldResolve {
+export interface Resolve extends Webpack.Resolve {
   extensions: string[]
 }
 
 /** Webpack configuration specific for this application */
-export interface Configuration extends WebpackConfiguration {
+export interface Configuration extends Webpack.Configuration {
   entry: Entry
-  module: OldModule
+  module: Webpack.Module
   output: Output
-  plugins: Plugin[]
+  plugins: Webpack.Plugin[]
   resolve: Resolve
 }
 
 /** Webpack loader for CSS family files */
-export interface CSSLoader extends RuleSetRule {
-  use: Loader[]
+export interface CSSLoader extends Webpack.RuleSetRule {
+  use: Webpack.Loader[]
 }
 
 /** Options for webpack build */
@@ -75,15 +59,16 @@ export interface Options {
   assetsIgnore?: string[]
   atlOptions?: LoaderConfig
   common?: string | boolean
+  devServer?: boolean
   cssLoaders?: CSSLoader[]
   destination?: string
   environment?: string
   filename?: string
-  hotReload?: 'none' | 'middleware' | 'server'
+  hotReload?: boolean
   pattern?: string[]
   source?: string
   sourceMaps?: boolean
-  target?: WebpackConfiguration['target']
+  target?: Target
   log?(message: string): void
 }
 
@@ -95,6 +80,7 @@ export interface Options {
 export function createConfiguration(options: Options = {}): Configuration {
   const internalOptions = optionsWithDefaults(options)
   return flow([
+    addDevServer(internalOptions),
     addSourceMaps(internalOptions),
     addProduction(internalOptions),
     addAssets(internalOptions),
@@ -113,7 +99,7 @@ export function createConfiguration(options: Options = {}): Configuration {
  */
 export function addPlugins(
   configuration: Configuration,
-  plugins: Plugin[],
+  plugins: Webpack.Plugin[],
 ): Configuration {
   return {...configuration, plugins: [...configuration.plugins, ...plugins]}
 }
@@ -126,7 +112,7 @@ export function addPlugins(
  */
 export function addRules(
   configuration: Configuration,
-  rules: RuleSetRule[],
+  rules: Webpack.RuleSetRule[],
 ): Configuration {
   return {
     ...configuration,
@@ -172,18 +158,17 @@ function createBase({
   target,
 }: InternalOptions): Configuration {
   log('--- wcb: making base configuration')
-  const nodeTarget = NON_NODE_TARGETS.indexOf(target) === -1
   return {
     target,
-    context: resolve(source),
+    context: path.resolve(source),
     entry: find([...pattern, ...IGNORE_GLOBS], {srcBase: source})
       .map(file => ({
-        base: basename(file, extname(file)),
-        dir: dirname(file),
-        file: `.${sep}${file}`,
+        base: path.basename(file, path.extname(file)),
+        dir: path.dirname(file),
+        file: `.${path.sep}${file}`,
       }))
       .reduce((obj, {base, dir, file}) => ({
-        ...obj, [join(dir, base)]: [file],
+        ...obj, [path.join(dir, base)]: [file],
       }), {}),
     mode: 'none',
     module: {
@@ -198,7 +183,7 @@ function createBase({
                 cacheDirectory: 'node_modules/.awcache',
                 forceIsolatedModules: true,
                 transpileOnly: true,
-                useCache: hotReload !== 'none',
+                useCache: hotReload,
                 ...atlOptions,
               },
             },
@@ -208,12 +193,12 @@ function createBase({
     },
     output: {
       filename: `${filename}.js`,
-      path: resolve(destination),
+      path: path.resolve(destination),
       publicPath: '/',
     },
     plugins: [
-      new DefinePlugin({
-        'process.env.IS_CLIENT': JSON.stringify(String(!nodeTarget)),
+      new Webpack.DefinePlugin({
+        'process.env.IS_CLIENT': JSON.stringify(String(!isNodeTarget(target))),
         'process.env.NODE_ENV': environment !== INVALID_ENVIRONMENT
           ? JSON.stringify(environment)
           : 'undefined',
@@ -227,7 +212,7 @@ function createBase({
 function addAssets({assets, assetsIgnore: ignore, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(typeof assets !== 'string') { return configuration }
-    const from = resolve(assets)
+    const from = path.resolve(assets)
     try {
       accessSync(from, F_OK)
     }
@@ -241,21 +226,14 @@ function addAssets({assets, assetsIgnore: ignore, log}: InternalOptions) {
 
 function addCommonChunk({common}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(common === false || Object.keys(configuration.entry).length === 0) {
-      return configuration
-    }
+    if(common === false) { return configuration }
+    const name = common === true ? 'common' : common
     return {
       ...configuration,
       optimization: {
         ...configuration.optimization,
         splitChunks: {
-          cacheGroups: {
-            common: {
-              chunks: 'initial',
-              minChunks: 2,
-              name: common === true ? 'common' : common,
-            },
-          },
+          cacheGroups: {common: {chunks: 'initial', minChunks: 2, name}},
         },
       },
     }
@@ -278,10 +256,21 @@ function addCssLoaders({
       }),
     ]), cssLoaders.map(({use, ...rule}) => ({
       ...rule,
-      use: hotReload !== 'none'
+      use: hotReload
         ? ['style-loader', ...use]
         : ExtractTextPlugin.extract({use, fallback: 'style-loader'}),
     })))
+  }
+}
+
+function addDevServer({devServer, log}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(!devServer) { return configuration }
+    log('--- wcb: adding webpack dev server')
+    return {
+      ...configuration,
+      devServer: {stats: {all: false, builtAt: true, errors: true}},
+    }
   }
 }
 
@@ -300,27 +289,25 @@ function addSourceMaps({sourceMaps, log}: InternalOptions) {
   }
 }
 
-function addHotReload({hotReload, log}: InternalOptions) {
+function addHotReload({devServer, hotReload, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(hotReload === 'none') { return configuration }
+    if(!hotReload) { return configuration }
     log('--- wcb: adding hot modules configuration')
-    const newConfiguration = addPlugins({
+    const config = addPlugins({
       ...configuration,
       optimization: {...configuration.optimization, noEmitOnErrors: true},
-    }, [new HotModuleReplacementPlugin()])
-    return hotReload === 'middleware'
-      ? addToEntries(newConfiguration, ['webpack-hot-middleware/client'])
-      : newConfiguration
+    }, [new Webpack.HotModuleReplacementPlugin()])
+    return devServer
+      ? {...config, devServer: {...config.devServer, hot: true}}
+      : addToEntries(config, ['webpack-hot-middleware/client'])
   }
 }
 
 function addNode({log, target}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(!isNodeTarget(target) && target !== ELECTRON_RENDERER_TARGET) {
-      return configuration
-    }
+    if(!isNodeTarget(target, true)) { return configuration }
     log('--- wcb: adding node configuration')
-    const newConfiguration: Configuration = {
+    const config: Configuration = {
       ...configuration,
       node: {
         Buffer: false,
@@ -331,26 +318,33 @@ function addNode({log, target}: InternalOptions) {
         setImmediate: false,
       },
     }
-    return target !== ELECTRON_RENDERER_TARGET
-      ? {...newConfiguration, externals: [nodeExternals()]}
-      : newConfiguration
+    if(target === ELECTRON_RENDERER) { return config }
+    return {...config, externals: [nodeExternals()]}
   }
 }
 
-function addProduction({environment, log}: InternalOptions) {
+function addProduction({cssLoaders, environment, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(environment !== 'production') { return configuration }
     log('--- wcb: adding production configuration')
     const BabelMinifyPlugin = require('babel-minify-webpack-plugin')
-    return addPlugins(configuration, [
-      new LoaderOptionsPlugin({minimize: true, debug: false}),
+    let plugins: Webpack.Plugin[] = [
+      new Webpack.LoaderOptionsPlugin({minimize: true, debug: false}),
       new BabelMinifyPlugin(),
-    ])
+    ]
+    if(cssLoaders.length > 0) {
+      const OptimizeCssPlugin = require('optimize-css-assets-webpack-plugin')
+      plugins = [...plugins, new OptimizeCssPlugin()]
+    }
+    return addPlugins(configuration, plugins)
   }
 }
 
-function isNodeTarget(target: Target) {
-  return NON_NODE_TARGETS.indexOf(target) === -1
+function isNodeTarget(target: Target, rendererCounts = false) {
+  const targets: Target[] = rendererCounts
+    ? NON_NODE_TARGETS
+    : [...NON_NODE_TARGETS, ELECTRON_RENDERER]
+  return targets.indexOf(target) === -1
 }
 
 function optionsWithDefaults(options: Options): InternalOptions {
@@ -360,11 +354,12 @@ function optionsWithDefaults(options: Options): InternalOptions {
     common = false,
     cssLoaders = [],
     destination = '',
+    devServer = false,
     environment = process.env.NODE_ENV !== undefined
       ? String(process.env.NODE_ENV)
       : INVALID_ENVIRONMENT,
     filename = '[name]',
-    hotReload = 'none',
+    hotReload = false,
     log = () => undefined,
     pattern = ['**/*.{j,t}s{,x}'],
     source = '',
@@ -372,7 +367,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
   } = options
   const {
     assetsIgnore = pattern,
-    sourceMaps = environment === 'development',
+    sourceMaps = environment !== 'production',
   } = options
   return {
     assets,
@@ -381,6 +376,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
     common,
     cssLoaders,
     destination,
+    devServer,
     environment,
     filename,
     hotReload,
@@ -392,8 +388,8 @@ function optionsWithDefaults(options: Options): InternalOptions {
   }
 }
 
-function fixPath({absoluteResourcePath}: DevtoolModuleFilenameTemplateInfo) {
-  const protocol = isAbsolute(absoluteResourcePath) ? 'file' : 'webpack'
-  const path = absoluteResourcePath.split(sep).join('/')
-  return `${protocol}://${path.startsWith('/') ? '' : '/'}${path}`
+function fixPath(i: Webpack.DevtoolModuleFilenameTemplateInfo) {
+  const protocol = path.isAbsolute(i.absoluteResourcePath) ? 'file' : 'webpack'
+  const resource = i.absoluteResourcePath.split(path.sep).join('/')
+  return `${protocol}://${resource.startsWith('/') ? '' : '/'}${resource}`
 }
