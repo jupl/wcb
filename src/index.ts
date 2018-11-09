@@ -19,6 +19,7 @@ const IGNORE_GLOBS = [
 ]
 const INVALID_ENVIRONMENT = '_-_|_-_'
 const NON_NODE_TARGETS: Target[] = ['web', 'webworker']
+const TRUTHY = /^(?:y|yes|true|1)$/i
 
 type Target = Webpack.Configuration['target']
 
@@ -359,7 +360,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
       ? String(process.env.NODE_ENV)
       : INVALID_ENVIRONMENT,
     filename = '[name]',
-    hotReload = false,
+    hotReload = TRUTHY.test(process.env.HOT_MODULES!),
     log = () => undefined,
     pattern = ['**/*.{j,t}s{,x}'],
     source = '',
