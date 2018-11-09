@@ -360,7 +360,6 @@ function optionsWithDefaults(options: Options): InternalOptions {
       ? String(process.env.NODE_ENV)
       : INVALID_ENVIRONMENT,
     filename = '[name]',
-    hotReload = TRUTHY.test(process.env.HOT_MODULES!),
     log = () => undefined,
     pattern = ['**/*.{j,t}s{,x}'],
     source = '',
@@ -368,6 +367,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
   } = options
   const {
     assetsIgnore = pattern,
+    hotReload = !isNodeTarget(target) && TRUTHY.test(process.env.HOT_MODULES!),
     sourceMaps = environment !== 'production',
   } = options
   return {
