@@ -43,6 +43,7 @@ const expectedConfig: Configuration = {
     ],
   },
   output: {
+    chunkFilename: '[id].js',
     devtoolModuleFilenameTemplate: fixPath,
     filename: '[name].js',
     path: __dirname,
@@ -193,7 +194,10 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       },
       plugins: [
         ...expectedPlugins,
-        new MiniCssExtractPlugin({filename: '[name].css'}),
+        new MiniCssExtractPlugin({
+          chunkFilename: '[id].css',
+          filename: '[name].css',
+        }),
       ],
     })
     expect(config2).toEqual({

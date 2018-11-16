@@ -20,6 +20,11 @@ const IGNORE_GLOBS = [
 const INVALID_ENVIRONMENT = '_-_|_-_'
 const NON_NODE_TARGETS: Target[] = ['web', 'webworker']
 const TRUTHY = /^(?:y|yes|true|1)$/i
+const ENVS = {
+  IS_CLIENT: 'process.env.IS_CLIENT',
+  NODE_ENV: 'process.env.NODE_ENV',
+  WEBPACK_BUILD: 'process.env.WEBPACK_BUILD',
+}
 
 type Target = Webpack.Configuration['target']
 
@@ -59,6 +64,7 @@ export interface Options {
   assets?: string | false
   assetsIgnore?: string[]
   atlOptions?: LoaderConfig
+  chunkFilename?: string
   common?: string | boolean
   devServer?: boolean
   cssLoaders?: CSSLoader[]
@@ -147,22 +153,11 @@ export function addToEntries(
 
 type InternalOptions = { [P in keyof Options]-?: Options[P] }
 
-function createBase({
-  atlOptions,
-  destination,
-  environment,
-  filename,
-  hotReload,
-  log,
-  pattern,
-  source,
-  target,
-}: InternalOptions): Configuration {
-  log('--- wcb: making base configuration')
+function createBase(opts: InternalOptions): Configuration {
+  opts.log('--- wcb: making base configuration')
   return {
-    target,
-    context: path.resolve(source),
-    entry: find([...pattern, ...IGNORE_GLOBS], {srcBase: source})
+    context: path.resolve(opts.source),
+    entry: find([...opts.pattern, ...IGNORE_GLOBS], {srcBase: opts.source})
       .map(file => ({
         base: path.basename(file, path.extname(file)),
         dir: path.dirname(file),
@@ -184,8 +179,8 @@ function createBase({
                 cacheDirectory: 'node_modules/.awcache',
                 forceIsolatedModules: true,
                 transpileOnly: true,
-                useCache: hotReload,
-                ...atlOptions,
+                useCache: opts.hotReload,
+                ...opts.atlOptions,
               },
             },
           ],
@@ -193,20 +188,22 @@ function createBase({
       ],
     },
     output: {
-      filename: `${filename}.js`,
-      path: path.resolve(destination),
+      chunkFilename: `${opts.chunkFilename}.js`,
+      filename: `${opts.filename}.js`,
+      path: path.resolve(opts.destination),
       publicPath: '/',
     },
     plugins: [
       new Webpack.DefinePlugin({
-        'process.env.IS_CLIENT': JSON.stringify(String(!isNodeTarget(target))),
-        'process.env.NODE_ENV': environment !== INVALID_ENVIRONMENT
-          ? JSON.stringify(environment)
+        [ENVS.IS_CLIENT]: JSON.stringify(String(!isNodeTarget(opts.target))),
+        [ENVS.NODE_ENV]: opts.environment !== INVALID_ENVIRONMENT
+          ? JSON.stringify(opts.environment)
           : 'undefined',
-        'process.env.WEBPACK_BUILD': '"true"',
+        [ENVS.WEBPACK_BUILD]: '"true"',
       }),
     ],
     resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
+    target: opts.target,
   }
 }
 
@@ -241,23 +238,21 @@ function addCommonChunk({common}: InternalOptions) {
   }
 }
 
-function addCssLoaders({
-  cssLoaders,
-  filename,
-  hotReload,
-  target,
-}: InternalOptions) {
+function addCssLoaders(opts: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(cssLoaders.length === 0) { return configuration }
-    if(hotReload || isNodeTarget(target)) {
-      return addRules(configuration, cssLoaders.map(({use, ...rule}) => ({
+    if(opts.cssLoaders.length === 0) { return configuration }
+    if(opts.hotReload || isNodeTarget(opts.target)) {
+      return addRules(configuration, opts.cssLoaders.map(({use, ...rule}) => ({
         ...rule,
         use: ['style-loader', ...use],
       })))
     }
     return addRules(addPlugins(configuration, [
-      new MiniCssExtractPlugin({filename: `${filename}.css`}),
-    ]), cssLoaders.map(({use, ...rule}) => ({
+      new MiniCssExtractPlugin({
+        chunkFilename: `${opts.chunkFilename}.css`,
+        filename: `${opts.filename}.css`,
+      }),
+    ]), opts.cssLoaders.map(({use, ...rule}) => ({
       ...rule,
       use: [MiniCssExtractPlugin.loader, ...use],
     })))
@@ -352,6 +347,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
   const {
     assets = false,
     atlOptions = {},
+    chunkFilename = '[id]',
     common = false,
     cssLoaders = [],
     destination = '',
@@ -374,6 +370,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
     assets,
     assetsIgnore,
     atlOptions,
+    chunkFilename,
     common,
     cssLoaders,
     destination,
