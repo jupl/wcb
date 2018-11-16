@@ -35,6 +35,15 @@ import {createConfiguration} from 'wcb'
 export default createConfiguration()
 #+END_SRC
 
+** Environment Variables
+The following environment variables are available for things like DCE:
+*** ~process.env.IS_CLIENT~
+This is ~'true'~ if ~target~ is set to ~'web'~ or ~'webworker'~. Otherwise it is ~'false'~. Useful when using shared code.
+*** ~process.env.NODE_ENV~
+This is read from the environment variable value set. Otherwise it is ~undefined~.
+*** ~process.env.WEBPACK_BUILD~
+This is always set to ~'true'~. This can be used for cases like when writing code for Node and run development code outside of Webpack.
+
 ** API
 *** ~createConfiguration(options?: Options): Configuration~
 Create a [[https://webpack.js.org/concepts/configuration/][Webpack configuration]] which can be used by a =webpack.config= file.

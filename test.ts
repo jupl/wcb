@@ -1,14 +1,9 @@
 // @ts-ignore
 import BabelMinifyPlugin from 'babel-minify-webpack-plugin'
-import ExtractTextPlugin from 'extract-text-webpack-plugin'
+import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import {sep} from 'path'
-import {
-  Configuration,
-  DefinePlugin,
-  HotModuleReplacementPlugin,
-  Plugin,
-} from 'webpack'
-import {CSSLoader, addRules, createConfiguration} from './src'
+import {DefinePlugin, HotModuleReplacementPlugin, Plugin} from 'webpack'
+import {CSSLoader, Configuration, addRules, createConfiguration} from './src'
 
 // tslint:disable:no-duplicate-string no-magic-numbers
 
@@ -53,6 +48,7 @@ const expectedConfig: Configuration = {
     path: __dirname,
     publicPath: '/',
   },
+  plugins: undefined!,
   resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
   target: 'web',
 }
@@ -179,50 +175,73 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   it('should build with CSS loaders', () => {
     const config1 = createConfiguration({cssLoaders})
     const config2 = createConfiguration({cssLoaders, hotReload: true})
-    expect(config1.module.rules).toEqual([
-      ...expectedConfig.module!.rules,
-      {
-        test: /\.css$/,
-        use: ExtractTextPlugin.extract({
-          fallback: 'style-loader',
-          use: ['css-loader'],
-        }),
-      },
-      {
-        test: /\.scss$/,
-        use: ExtractTextPlugin.extract({
-          fallback: 'style-loader',
-          use: ['css-loader', 'sass-loader'],
-        }),
-      },
-    ])
-    expect(config2.module.rules).toEqual([
-      {
-        exclude: /node_modules/,
-        test: /\.[jt]sx?$/,
-        use: [
+    expect(config1).toEqual({
+      ...expectedConfig,
+      module: {
+        ...expectedConfig.module,
+        rules: [
+          ...expectedConfig.module.rules,
           {
-            loader: 'awesome-typescript-loader',
-            options: {
-              cacheDirectory: 'node_modules/.awcache',
-              forceIsolatedModules: true,
-              transpileOnly: true,
-              useCache: true,
-            },
+            test: /\.css$/,
+            use: [MiniCssExtractPlugin.loader, 'css-loader'],
+          },
+          {
+            test: /\.scss$/,
+            use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
           },
         ],
       },
-      {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
+      plugins: [
+        ...expectedPlugins,
+        new MiniCssExtractPlugin({filename: '[name].css'}),
+      ],
+    })
+    expect(config2).toEqual({
+      ...expectedConfig,
+      entry: {
+        extra: [
+          'webpack-hot-middleware/client',
+          `.${sep}extra.ts`,
+        ],
+        'src/index': [
+          'webpack-hot-middleware/client',
+          `.${sep}src${sep}index.ts`,
+        ],
       },
-      {
-        test: /\.scss$/,
-        use: ['style-loader', 'css-loader', 'sass-loader'],
+      module: {
+        ...expectedConfig.module,
+        rules: [
+          {
+            exclude: /node_modules/,
+            test: /\.[jt]sx?$/,
+            use: [
+              {
+                loader: 'awesome-typescript-loader',
+                options: {
+                  cacheDirectory: 'node_modules/.awcache',
+                  forceIsolatedModules: true,
+                  transpileOnly: true,
+                  useCache: true,
+                },
+              },
+            ],
+          },
+          {
+            test: /\.css$/,
+            use: ['style-loader', 'css-loader'],
+          },
+          {
+            test: /\.scss$/,
+            use: ['style-loader', 'css-loader', 'sass-loader'],
+          },
+        ],
       },
-    ])
-    expect(config1.plugins).toHaveLength(2)
-    expect(config2.plugins).toHaveLength(3)
+      optimization: {noEmitOnErrors: true},
+      plugins: [
+        ...expectedPlugins,
+        new HotModuleReplacementPlugin(),
+      ],
+    })
   })
 
   it('should build with hot reload', () => {
@@ -253,7 +272,10 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     expect(createConfiguration({hotReload: true})).toEqual({
       ...localExpectedConfig,
       entry: {
-        extra: ['webpack-hot-middleware/client', `.${sep}extra.ts`],
+        extra: [
+          'webpack-hot-middleware/client',
+          `.${sep}extra.ts`,
+        ],
         'src/index': [
           'webpack-hot-middleware/client',
           `.${sep}src${sep}index.ts`,

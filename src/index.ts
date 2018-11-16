@@ -1,12 +1,12 @@
 import {LoaderConfig} from 'awesome-typescript-loader/dist/interfaces'
 import {F_OK} from 'constants'
 import CopyPlugin from 'copy-webpack-plugin'
-import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import {accessSync} from 'fs'
 import {find} from 'globule'
 import {flow} from 'lodash'
-import * as path from 'path'
-import * as Webpack from 'webpack'
+import MiniCssExtractPlugin from 'mini-css-extract-plugin'
+import path from 'path'
+import Webpack from 'webpack'
 import nodeExternals from 'webpack-node-externals'
 
 const ELECTRON_RENDERER = 'electron-renderer'
@@ -249,17 +249,17 @@ function addCssLoaders({
 }: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(cssLoaders.length === 0) { return configuration }
+    if(hotReload || isNodeTarget(target)) {
+      return addRules(configuration, cssLoaders.map(({use, ...rule}) => ({
+        ...rule,
+        use: ['style-loader', ...use],
+      })))
+    }
     return addRules(addPlugins(configuration, [
-      new ExtractTextPlugin({
-        allChunks: true,
-        disable: isNodeTarget(target),
-        filename: `${filename}.css`,
-      }),
+      new MiniCssExtractPlugin({filename: `${filename}.css`}),
     ]), cssLoaders.map(({use, ...rule}) => ({
       ...rule,
-      use: hotReload
-        ? ['style-loader', ...use]
-        : ExtractTextPlugin.extract({use, fallback: 'style-loader'}),
+      use: [MiniCssExtractPlugin.loader, ...use],
     })))
   }
 }
