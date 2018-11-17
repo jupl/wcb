@@ -5,9 +5,6 @@ import {CSSLoader, Configuration, addRules, createConfiguration} from './src'
 
 // tslint:disable:no-duplicate-string no-magic-numbers
 
-const fixPath = createConfiguration({
-  log: false,
-}).output.devtoolModuleFilenameTemplate
 const cssLoaders: CSSLoader[] = [
   {test: /\.css$/, use: ['css-loader']},
   {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
@@ -44,7 +41,6 @@ const expectedConfig: Configuration = {
   },
   output: {
     chunkFilename: '[id].js',
-    devtoolModuleFilenameTemplate: fixPath,
     filename: '[name].js',
     path: __dirname,
     publicPath: '/',
@@ -75,15 +71,16 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
 
   it('should build with base options', () => {
     const config = createConfiguration({log: 'base'})
-    expect(config).toEqual({...expectedConfig, plugins: expectedPlugins})
-    const {output: {devtoolModuleFilenameTemplate}} = config
-    expect(devtoolModuleFilenameTemplate).toBeInstanceOf(Function)
-    expect((devtoolModuleFilenameTemplate as Function)({
-      absoluteResourcePath: `some/path`,
-    })).toEqual('webpack:///some/path')
-    expect((devtoolModuleFilenameTemplate as Function)({
-      absoluteResourcePath: `/some/path`,
-    })).toEqual('file:///some/path')
+    expect(config).toEqual({
+      ...expectedConfig,
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
+      plugins: expectedPlugins,
+    })
   })
 
   it('should build with production environment', () => {
@@ -117,14 +114,29 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
 
   it('should build with assets', () => {
     const {plugins, ...config} = createConfiguration({assets: ''})
-    expect(config).toEqual(expectedConfig)
+    expect(config).toEqual({
+      ...expectedConfig,
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
+    })
     expect(plugins).toHaveLength(2)
     expect(plugins).toEqual(expect.arrayContaining(expectedPlugins))
   })
 
   it('should build with invalid assets', () => {
-    expect(createConfiguration({assets: 'path/to/assets'})).toEqual({
+    const config = createConfiguration({assets: 'path/to/assets'})
+    expect(config).toEqual({
       ...expectedConfig,
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
       plugins: expectedPlugins,
     })
   })
@@ -157,6 +169,12 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
           },
         },
       },
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config1
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
       plugins: expectedPlugins,
     })
     expect(config2).toEqual({
@@ -167,6 +185,12 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
             common: {name: 'shared', chunks: 'initial', minChunks: 2},
           },
         },
+      },
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config2
+          .output
+          .devtoolModuleFilenameTemplate,
       },
       plugins: expectedPlugins,
     })
@@ -191,6 +215,12 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
             use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
           },
         ],
+      },
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config1
+          .output
+          .devtoolModuleFilenameTemplate,
       },
       plugins: [
         ...expectedPlugins,
@@ -242,6 +272,12 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
         ],
       },
       optimization: {noEmitOnErrors: true},
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config2
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
       plugins: [
         ...expectedPlugins,
         new HotModuleReplacementPlugin(),
@@ -261,6 +297,8 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with hot reload', () => {
+    const config1 = createConfiguration({hotReload: true})
+    const config2 = createConfiguration({devServer: true, hotReload: true})
     const localExpectedConfig = {
       ...expectedConfig,
       devtool: 'cheap-module-eval-source-map',
@@ -286,7 +324,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       optimization: {noEmitOnErrors: true},
       plugins: [...expectedPlugins, new HotModuleReplacementPlugin()],
     }
-    expect(createConfiguration({hotReload: true})).toEqual({
+    expect(config1).toEqual({
       ...localExpectedConfig,
       entry: {
         extra: [
@@ -298,17 +336,30 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
           `.${sep}src${sep}index.ts`,
         ],
       },
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config1
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
     })
-    expect(createConfiguration({devServer: true, hotReload: true})).toEqual({
+    expect(config2).toEqual({
       ...localExpectedConfig,
       devServer: {...devServer, hot: true},
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config2
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
     })
   })
 
   it('should build with tweaked awesome-typescript-loader options', () => {
-    expect(createConfiguration({
+    const config = createConfiguration({
       atlOptions: {useBabel: true, configFileName: 'tsconfig.other.json'},
-    })).toEqual({
+    })
+    expect(config).toEqual({
       ...expectedConfig,
       module: {
         rules: [
@@ -331,17 +382,51 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
           },
         ],
       },
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
       plugins: expectedPlugins,
     })
   })
 
   it('should build with dev server', () => {
-    expect(createConfiguration({devServer: true})).toEqual({
+    const config = createConfiguration({devServer: true})
+    expect(config).toEqual({
       ...expectedConfig,
       devServer,
       devtool: 'eval-source-map',
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate: config
+          .output
+          .devtoolModuleFilenameTemplate,
+      },
       plugins: expectedPlugins,
     })
+  })
+
+  it('should remap filenames for source maps as expected', () => {
+    const config1 = createConfiguration({log: false})
+    const config2 = createConfiguration({
+      log: false,
+      sourceMaps: 'cheap-module-eval-source-map',
+    })
+    const fixPath1 = config1.output.devtoolModuleFilenameTemplate as Function
+    const fixPath2 = config2.output.devtoolModuleFilenameTemplate as Function
+    expect(fixPath1).toBeInstanceOf(Function)
+    expect(fixPath2).toBeInstanceOf(Function)
+    expect(fixPath1({absoluteResourcePath: 'some/path'}))
+      .toEqual('webpack:///some/path')
+    expect(fixPath1({absoluteResourcePath: '/some/path'}))
+      .toEqual('file:///some/path')
+    expect(fixPath2({absoluteResourcePath: 'garbage'}))
+      .toEqual('webpack:///garbage')
+    expect(fixPath2({
+      absoluteResourcePath: 'src/index.ts',
+    }).indexOf('file:///')).toBe(0)
   })
 })
 

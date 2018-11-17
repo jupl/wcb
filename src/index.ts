@@ -2,9 +2,9 @@ import {LoaderConfig} from 'awesome-typescript-loader/dist/interfaces'
 import chalk from 'chalk'
 import {F_OK} from 'constants'
 import CopyPlugin from 'copy-webpack-plugin'
-import {accessSync} from 'fs'
+import {accessSync, existsSync} from 'fs'
 import {find} from 'globule'
-import {flow} from 'lodash'
+import {flow, memoize} from 'lodash'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 // @ts-ignore
 import OptimizeCssPlugin from 'optimize-css-assets-webpack-plugin'
@@ -285,16 +285,16 @@ function addDevServer({devServer, log}: InternalOptions) {
   }
 }
 
-function addSourceMaps({sourceMaps, log}: InternalOptions) {
+function addSourceMaps(opts: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(!sourceMaps) { return configuration }
-    info(log, `${ADD} Source maps`)
+    if(!opts.sourceMaps) { return configuration }
+    info(opts.log, `${ADD} Source maps`)
     return {
       ...configuration,
-      devtool: sourceMaps,
+      devtool: opts.sourceMaps,
       output: {
         ...configuration.output,
-        devtoolModuleFilenameTemplate: fixPath,
+        devtoolModuleFilenameTemplate: createFixPath(opts),
       },
     }
   }
@@ -414,10 +414,21 @@ function optionsWithDefaults(options: Options): InternalOptions {
   }
 }
 
-function fixPath(i: Webpack.DevtoolModuleFilenameTemplateInfo) {
-  const protocol = path.isAbsolute(i.absoluteResourcePath) ? 'file' : 'webpack'
-  const resource = i.absoluteResourcePath.split(path.sep).join('/')
-  return `${protocol}://${resource.startsWith('/') ? '' : '/'}${resource}`
+function createFixPath({sourceMaps}: InternalOptions) {
+  const exists = memoize(existsSync)
+  return (i: Webpack.DevtoolModuleFilenameTemplateInfo) => {
+    // Tweak resource information
+    let resource = i.absoluteResourcePath
+    if(`${sourceMaps}`.includes('module') && !path.isAbsolute(resource)) {
+      const maybe = path.resolve(resource)
+      if(exists(maybe)) {
+        resource = maybe
+      }
+    }
+    resource = resource.split(path.sep).join('/')
+    const protocol = path.isAbsolute(resource) ? 'file' : 'webpack'
+    return `${protocol}://${resource.startsWith('/') ? '' : '/'}${resource}`
+  }
 }
 
 function info(id: string | boolean, message: string) {
