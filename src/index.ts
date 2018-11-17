@@ -8,6 +8,7 @@ import {flow} from 'lodash'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import path from 'path'
 import Webpack from 'webpack'
+// @ts-ignore
 import Weblog from 'webpack-log'
 import nodeExternals from 'webpack-node-externals'
 
