@@ -202,6 +202,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     })
     expect(config2).toEqual({
       ...expectedConfig,
+      devtool: 'cheap-module-eval-source-map',
       entry: {
         extra: [
           'webpack-hot-middleware/client',
@@ -262,6 +263,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   it('should build with hot reload', () => {
     const localExpectedConfig = {
       ...expectedConfig,
+      devtool: 'cheap-module-eval-source-map',
       module: {
         rules: [
           {
@@ -337,6 +339,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     expect(createConfiguration({devServer: true})).toEqual({
       ...expectedConfig,
       devServer,
+      devtool: 'eval-source-map',
       plugins: expectedPlugins,
     })
   })

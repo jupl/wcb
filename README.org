@@ -83,7 +83,11 @@ If value is a string, then logging is done with the string value used as an iden
 Glob patterns to pick up as entry points relative to ~source~. If you want to use JavaScript as entry points then instead of ~ts{,x}~ use ~{j,t}s{,x}~.
 *** ~source: string = process.cwd()~
 Path where source files will be used for building. If path is relative, it is relative to ~process.cwd()~.
-*** ~sourceMaps: boolean = environment !== 'production'~
-If enabled then source maps are generated.
+*** ~sourceMaps?: Devtool~
+[[https://webpack.js.org/configuration/devtool/#devtool][Webpack devtool]] option for source maps. By default the following occurs in order from top to bottom:
+- If environment is ~'production'~ then ~false~
+- If hot reload is ~true~ then ~'cheap-module-eval-source-map'~
+- If dev tools is enabled then ~'eval-source-map'~
+- If development then ~'source-map'~
 *** ~target: string = 'web'~
 [[https://webpack.js.org/configuration/target/][Webpack targets]] to build to.

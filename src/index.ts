@@ -31,6 +31,7 @@ const INVALID = '_-_|_-_'
 const NON_NODE_TARGETS: Target[] = ['web', 'webworker']
 const TRUTHY = /^(?:y|yes|true|1)$/i
 
+type Devtool = Webpack.Configuration['devtool']
 type Target = Webpack.Configuration['target']
 
 /** Webpack entries */
@@ -80,7 +81,7 @@ export interface Options {
   log?: string | boolean
   pattern?: string[]
   source?: string
-  sourceMaps?: boolean
+  sourceMaps?: Devtool
   target?: Target
 }
 
@@ -290,7 +291,7 @@ function addSourceMaps({sourceMaps, log}: InternalOptions) {
     info(log, `${ADD} Source maps`)
     return {
       ...configuration,
-      devtool: 'source-map',
+      devtool: sourceMaps,
       output: {
         ...configuration.output,
         devtoolModuleFilenameTemplate: fixPath,
@@ -339,7 +340,7 @@ function addProduction({log, ...opts}: InternalOptions) {
     info(log, `${ADD} Production`)
     let plugins: Webpack.Plugin[] = [
       new Webpack.LoaderOptionsPlugin({minimize: true, debug: false}),
-      new TerserPlugin({parallel: true, sourceMap: opts.sourceMaps}),
+      new TerserPlugin({parallel: true, sourceMap: !!opts.sourceMaps}),
     ]
     if(opts.cssLoaders.length > 0) {
       plugins = [...plugins, new OptimizeCssPlugin()]
@@ -383,7 +384,15 @@ function optionsWithDefaults(options: Options): InternalOptions {
   const {
     assetsIgnore = pattern,
     hotReload = !isNodeTarget(target) && TRUTHY.test(process.env.HOT_MODULES!),
-    sourceMaps = environment !== 'production',
+  } = options
+  const {
+    sourceMaps = environment === 'production'
+      ? false
+      : hotReload
+        ? 'cheap-module-eval-source-map'
+        : devServer
+          ? 'eval-source-map'
+          : 'source-map',
   } = options
   return {
     assets,
