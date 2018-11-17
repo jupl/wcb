@@ -6,7 +6,11 @@ import {accessSync} from 'fs'
 import {find} from 'globule'
 import {flow} from 'lodash'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
+// @ts-ignore
+import OptimizeCssPlugin from 'optimize-css-assets-webpack-plugin'
 import path from 'path'
+// @ts-ignore
+import TerserPlugin from 'terser-webpack-plugin'
 import Webpack from 'webpack'
 // @ts-ignore
 import Weblog from 'webpack-log'
@@ -333,12 +337,10 @@ function addProduction({log, ...opts}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(opts.environment !== 'production') { return configuration }
     info(log, `${ADD} Production`)
-    const TerserPlugin = require('terser-webpack-plugin')
     let plugins: Webpack.Plugin[] = [
       new Webpack.LoaderOptionsPlugin({minimize: true, debug: false}),
     ]
     if(opts.cssLoaders.length > 0) {
-      const OptimizeCssPlugin = require('optimize-css-assets-webpack-plugin')
       plugins = [...plugins, new OptimizeCssPlugin()]
     }
     return addPlugins({
