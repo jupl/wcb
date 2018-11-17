@@ -1,4 +1,5 @@
 import {LoaderConfig} from 'awesome-typescript-loader/dist/interfaces'
+import chalk from 'chalk'
 import {F_OK} from 'constants'
 import CopyPlugin from 'copy-webpack-plugin'
 import {accessSync} from 'fs'
@@ -7,24 +8,23 @@ import {flow} from 'lodash'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import path from 'path'
 import Webpack from 'webpack'
+import Weblog from 'webpack-log'
 import nodeExternals from 'webpack-node-externals'
 
+const logger = Weblog({name: 'wcb'})
+const ADD = chalk.cyan('+')
 const ELECTRON_RENDERER = 'electron-renderer'
 const IGNORE_GLOBS = [
-  '!**/coverage/**',
+  '!**/.*',
+  '!**/.*/**',
   '!**/node_modules/**',
   '!**/*.d.ts',
   '!**/__tests__/**',
   '!**/{,*.}{test,spec}.*',
 ]
-const INVALID_ENVIRONMENT = '_-_|_-_'
+const INVALID = '_-_|_-_'
 const NON_NODE_TARGETS: Target[] = ['web', 'webworker']
 const TRUTHY = /^(?:y|yes|true|1)$/i
-const ENVS = {
-  IS_CLIENT: 'process.env.IS_CLIENT',
-  NODE_ENV: 'process.env.NODE_ENV',
-  WEBPACK_BUILD: 'process.env.WEBPACK_BUILD',
-}
 
 type Target = Webpack.Configuration['target']
 
@@ -72,11 +72,11 @@ export interface Options {
   environment?: string
   filename?: string
   hotReload?: boolean
+  log?: string | boolean
   pattern?: string[]
   source?: string
   sourceMaps?: boolean
   target?: Target
-  log?(message: string): void
 }
 
 /**
@@ -95,6 +95,7 @@ export function createConfiguration(options: Options = {}): Configuration {
     addCommonChunk(internalOptions),
     addCssLoaders(internalOptions),
     addHotReload(internalOptions),
+    post(internalOptions),
   ])(createBase(internalOptions))
 }
 
@@ -153,9 +154,10 @@ export function addToEntries(
 
 type InternalOptions = { [P in keyof Options]-?: Options[P] }
 
-function createBase(opts: InternalOptions): Configuration {
-  opts.log('--- wcb: making base configuration')
+function createBase({log, target, ...opts}: InternalOptions): Configuration {
+  info(log, 'Building...')
   return {
+    target,
     context: path.resolve(opts.source),
     entry: find([...opts.pattern, ...IGNORE_GLOBS], {srcBase: opts.source})
       .map(file => ({
@@ -195,15 +197,14 @@ function createBase(opts: InternalOptions): Configuration {
     },
     plugins: [
       new Webpack.DefinePlugin({
-        [ENVS.IS_CLIENT]: JSON.stringify(String(!isNodeTarget(opts.target))),
-        [ENVS.NODE_ENV]: opts.environment !== INVALID_ENVIRONMENT
+        'process.env.IS_CLIENT': JSON.stringify(String(!isNodeTarget(target))),
+        'process.env.NODE_ENV': opts.environment !== INVALID
           ? JSON.stringify(opts.environment)
           : 'undefined',
-        [ENVS.WEBPACK_BUILD]: '"true"',
+        'process.env.WEBPACK_BUILD': '"true"',
       }),
     ],
     resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
-    target: opts.target,
   }
 }
 
@@ -217,7 +218,7 @@ function addAssets({assets, assetsIgnore: ignore, log}: InternalOptions) {
     catch(e) {
       return configuration
     }
-    log('--- wcb: adding assets configuration')
+    info(log, `${ADD} Copy assets`)
     return addPlugins(configuration, [new CopyPlugin([{from, ignore}])])
   }
 }
@@ -238,31 +239,39 @@ function addCommonChunk({common}: InternalOptions) {
   }
 }
 
-function addCssLoaders(opts: InternalOptions) {
+function addCssLoaders({cssLoaders, log, ...opts}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(opts.cssLoaders.length === 0) { return configuration }
-    if(opts.hotReload || isNodeTarget(opts.target)) {
-      return addRules(configuration, opts.cssLoaders.map(({use, ...rule}) => ({
+    if(cssLoaders.length === 0) { return configuration }
+    if(isNodeTarget(opts.target)) {
+      info(log, `${ADD} CSS loaders`)
+      return addRules(configuration, cssLoaders)
+    }
+    else if(opts.hotReload) {
+      info(log, `${ADD} CSS loaders with style-loader`)
+      return addRules(configuration, cssLoaders.map(({use, ...rule}) => ({
         ...rule,
         use: ['style-loader', ...use],
       })))
     }
-    return addRules(addPlugins(configuration, [
-      new MiniCssExtractPlugin({
-        chunkFilename: `${opts.chunkFilename}.css`,
-        filename: `${opts.filename}.css`,
-      }),
-    ]), opts.cssLoaders.map(({use, ...rule}) => ({
-      ...rule,
-      use: [MiniCssExtractPlugin.loader, ...use],
-    })))
+    else {
+      info(log, `${ADD} CSS loaders with extraction`)
+      return addRules(addPlugins(configuration, [
+        new MiniCssExtractPlugin({
+          chunkFilename: `${opts.chunkFilename}.css`,
+          filename: `${opts.filename}.css`,
+        }),
+      ]), cssLoaders.map(({use, ...rule}) => ({
+        ...rule,
+        use: [MiniCssExtractPlugin.loader, ...use],
+      })))
+    }
   }
 }
 
 function addDevServer({devServer, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(!devServer) { return configuration }
-    log('--- wcb: adding webpack dev server')
+    info(log, `${ADD} Webpack dev server`)
     return {
       ...configuration,
       devServer: {stats: {all: false, builtAt: true, errors: true}},
@@ -273,7 +282,7 @@ function addDevServer({devServer, log}: InternalOptions) {
 function addSourceMaps({sourceMaps, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(!sourceMaps) { return configuration }
-    log('--- wcb: adding source maps')
+    info(log, `${ADD} Source maps`)
     return {
       ...configuration,
       devtool: 'source-map',
@@ -288,7 +297,7 @@ function addSourceMaps({sourceMaps, log}: InternalOptions) {
 function addHotReload({devServer, hotReload, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(!hotReload) { return configuration }
-    log('--- wcb: adding hot modules configuration')
+    info(log, `${ADD} Hot module reloading`)
     const config = addPlugins({
       ...configuration,
       optimization: {...configuration.optimization, noEmitOnErrors: true},
@@ -302,7 +311,7 @@ function addHotReload({devServer, hotReload, log}: InternalOptions) {
 function addNode({log, target}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(!isNodeTarget(target, true)) { return configuration }
-    log('--- wcb: adding node configuration')
+    info(log, `${ADD} Node target`)
     const config: Configuration = {
       ...configuration,
       node: {
@@ -319,20 +328,34 @@ function addNode({log, target}: InternalOptions) {
   }
 }
 
-function addProduction({cssLoaders, environment, log}: InternalOptions) {
+function addProduction({log, ...opts}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(environment !== 'production') { return configuration }
-    log('--- wcb: adding production configuration')
-    const BabelMinifyPlugin = require('babel-minify-webpack-plugin')
+    if(opts.environment !== 'production') { return configuration }
+    info(log, `${ADD} Production`)
+    const TerserPlugin = require('terser-webpack-plugin')
     let plugins: Webpack.Plugin[] = [
       new Webpack.LoaderOptionsPlugin({minimize: true, debug: false}),
-      new BabelMinifyPlugin(),
     ]
-    if(cssLoaders.length > 0) {
+    if(opts.cssLoaders.length > 0) {
       const OptimizeCssPlugin = require('optimize-css-assets-webpack-plugin')
       plugins = [...plugins, new OptimizeCssPlugin()]
     }
-    return addPlugins(configuration, plugins)
+    return addPlugins({
+      ...configuration,
+      optimization: {
+        ...configuration.optimization,
+        minimizer: [
+          new TerserPlugin({parallel: true, sourceMap: opts.sourceMaps}),
+        ],
+      },
+    }, plugins)
+  }
+}
+
+function post({log}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    info(log, 'Done!')
+    return configuration
   }
 }
 
@@ -353,10 +376,10 @@ function optionsWithDefaults(options: Options): InternalOptions {
     destination = '',
     devServer = false,
     environment = process.env.NODE_ENV !== undefined
-      ? String(process.env.NODE_ENV)
-      : INVALID_ENVIRONMENT,
+      ? process.env.NODE_ENV
+      : INVALID,
     filename = '[name]',
-    log = () => undefined,
+    log = true,
     pattern = ['**/*.{j,t}s{,x}'],
     source = '',
     target = 'web',
@@ -390,4 +413,10 @@ function fixPath(i: Webpack.DevtoolModuleFilenameTemplateInfo) {
   const protocol = path.isAbsolute(i.absoluteResourcePath) ? 'file' : 'webpack'
   const resource = i.absoluteResourcePath.split(path.sep).join('/')
   return `${protocol}://${resource.startsWith('/') ? '' : '/'}${resource}`
+}
+
+function info(id: string | boolean, message: string) {
+  if(id === false) { return }
+  const prefix = id === true ? '' : `[${chalk.bold(id)}] `
+  logger.info(`${prefix}${message}`)
 }

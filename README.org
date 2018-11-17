@@ -77,8 +77,8 @@ Environment to build under. Currently "production" affects configuration changes
 [[https://webpack.js.org/configuration/output/#output-filename][Output bundle filename structure]] for JS/CSS. This is useful for [[https://webpack.js.org/guides/caching/][caching]] strategies. DO NOT INCLUDE FILE EXTENSION.
 *** ~hotReload: boolean = process.env.HOT_MODULES === 'true'~
 If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled. If using =webpack-dev-server= then use the ~server~ option. Otherwise if using =webpack-dev-middleware= or similar then use the ~middleware~ option.
-*** ~log?: (message: string) => void~
-If a function is provided it will be called for logging. Otherwise nothing is logged.
+*** ~log?: string | boolean~
+If value is a string, then logging is done with the string value used as an identifier.
 *** ~pattern: string[] = ['**/*.ts{,x}']~
 Glob patterns to pick up as entry points relative to ~source~. If you want to use JavaScript as entry points then instead of ~ts{,x}~ use ~{j,t}s{,x}~.
 *** ~source: string = process.cwd()~

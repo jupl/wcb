@@ -1,6 +1,7 @@
 {
   "extends": "@jupl/tslint-config",
   "rules": {
+    "max-file-line-count": [true, 500],
     "no-mixed-interface": false
   }
 }

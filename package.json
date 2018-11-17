@@ -1,6 +1,6 @@
 {
   "name": "wcb",
-  "version": "0.11.2",
+  "version": "0.12.0",
   "description": "Personal Webpack config builder",
   "author": "jupl",
   "license": "MIT",
@@ -28,13 +28,15 @@
   },
   "dependencies": {
     "awesome-typescript-loader": "^5.2.1",
-    "babel-minify-webpack-plugin": "^0.3.1",
+    "chalk": "^2.4.1",
     "copy-webpack-plugin": "^4.6.0",
     "globule": "^1.2.1",
     "lodash": "^4.17.11",
     "mini-css-extract-plugin": "^0.4.4",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
     "style-loader": "^0.23.1",
+    "terser-webpack-plugin": "^1.1.0",
+    "webpack-log": "^2.0.0",
     "webpack-node-externals": "^1.7.2"
   },
   "peerDependencies": {
@@ -42,6 +44,7 @@
   },
   "devDependencies": {
     "@jupl/tslint-config": "^0.5.1",
+    "@types/chalk": "^2.2.0",
     "@types/copy-webpack-plugin": "^4.4.2",
     "@types/globule": "^1.1.3",
     "@types/jest": "^23.3.9",

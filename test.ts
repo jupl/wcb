@@ -1,5 +1,3 @@
-// @ts-ignore
-import BabelMinifyPlugin from 'babel-minify-webpack-plugin'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import {sep} from 'path'
 import {DefinePlugin, HotModuleReplacementPlugin, Plugin} from 'webpack'
@@ -7,7 +5,9 @@ import {CSSLoader, Configuration, addRules, createConfiguration} from './src'
 
 // tslint:disable:no-duplicate-string no-magic-numbers
 
-const fixPath = createConfiguration().output.devtoolModuleFilenameTemplate
+const fixPath = createConfiguration({
+  log: false,
+}).output.devtoolModuleFilenameTemplate
 const cssLoaders: CSSLoader[] = [
   {test: /\.css$/, use: ['css-loader']},
   {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
@@ -74,7 +74,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with base options', () => {
-    const config = createConfiguration()
+    const config = createConfiguration({log: 'base'})
     expect(config).toEqual({...expectedConfig, plugins: expectedPlugins})
     const {output: {devtoolModuleFilenameTemplate}} = config
     expect(devtoolModuleFilenameTemplate).toBeInstanceOf(Function)
@@ -87,20 +87,20 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with production environment', () => {
-    const {plugins: plugins1, ...config} = createConfiguration({
-      environment: 'production',
-    })
-    const {plugins: plugins2} = createConfiguration({
-      cssLoaders,
-      environment: 'production',
-    })
+    const {
+      plugins: plugins1,
+      optimization: optimization,
+      ...config
+    } = createConfiguration({environment: 'production'})
+    const {
+      plugins: plugins2,
+    } = createConfiguration({cssLoaders, environment: 'production'})
     const sharedPlugins = [
       new DefinePlugin({
         'process.env.IS_CLIENT': '"true"',
         'process.env.NODE_ENV': '"production"',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
-      new (BabelMinifyPlugin as any)(), // tslint:disable-line:no-any
     ]
     expect(config).toEqual({
       ...expectedConfig,
@@ -110,8 +110,9 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
         devtoolModuleFilenameTemplate: undefined,
       },
     })
-    expect(plugins1).toHaveLength(3)
-    expect(plugins2).toHaveLength(5)
+    expect(optimization!.minimizer).toHaveLength(1)
+    expect(plugins1).toHaveLength(2)
+    expect(plugins2).toHaveLength(4)
     expect(plugins1).toEqual(expect.arrayContaining(sharedPlugins))
     expect(plugins2).toEqual(expect.arrayContaining(sharedPlugins))
   })
@@ -176,6 +177,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   it('should build with CSS loaders', () => {
     const config1 = createConfiguration({cssLoaders})
     const config2 = createConfiguration({cssLoaders, hotReload: true})
+    const config3 = createConfiguration({cssLoaders, target: 'node'})
     expect(config1).toEqual({
       ...expectedConfig,
       module: {
@@ -246,6 +248,17 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
         new HotModuleReplacementPlugin(),
       ],
     })
+    expect(config3.module.rules).toEqual([
+      ...expectedConfig.module.rules,
+      {
+        test: /\.css$/,
+        use: ['css-loader'],
+      },
+      {
+        test: /\.scss$/,
+        use: ['css-loader', 'sass-loader'],
+      },
+    ])
   })
 
   it('should build with hot reload', () => {
