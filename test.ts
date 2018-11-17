@@ -89,7 +89,6 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   it('should build with production environment', () => {
     const {
       plugins: plugins1,
-      optimization: optimization,
       ...config
     } = createConfiguration({environment: 'production'})
     const {
@@ -110,9 +109,8 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
         devtoolModuleFilenameTemplate: undefined,
       },
     })
-    expect(optimization!.minimizer).toHaveLength(1)
-    expect(plugins1).toHaveLength(2)
-    expect(plugins2).toHaveLength(4)
+    expect(plugins1).toHaveLength(3)
+    expect(plugins2).toHaveLength(5)
     expect(plugins1).toEqual(expect.arrayContaining(sharedPlugins))
     expect(plugins2).toEqual(expect.arrayContaining(sharedPlugins))
   })

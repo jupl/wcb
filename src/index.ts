@@ -339,19 +339,12 @@ function addProduction({log, ...opts}: InternalOptions) {
     info(log, `${ADD} Production`)
     let plugins: Webpack.Plugin[] = [
       new Webpack.LoaderOptionsPlugin({minimize: true, debug: false}),
+      new TerserPlugin({parallel: true, sourceMap: opts.sourceMaps}),
     ]
     if(opts.cssLoaders.length > 0) {
       plugins = [...plugins, new OptimizeCssPlugin()]
     }
-    return addPlugins({
-      ...configuration,
-      optimization: {
-        ...configuration.optimization,
-        minimizer: [
-          new TerserPlugin({parallel: true, sourceMap: opts.sourceMaps}),
-        ],
-      },
-    }, plugins)
+    return addPlugins(configuration, plugins)
   }
 }
 
