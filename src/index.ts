@@ -217,15 +217,14 @@ function createBase({log, target, ...opts}: InternalOptions): Configuration {
 function addAssets({assetsIgnore: ignore, log, ...opts}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(opts.assets === false) { return configuration }
-    const assets = opts.assets === true ? opts.source : opts.assets
-    const from = path.resolve(assets)
+    const from = path.resolve(opts.assets === true ? opts.source : opts.assets)
     try {
       accessSync(from, F_OK)
     }
     catch(e) {
       return configuration
     }
-    info(log, `${ADD} Copy assets from ${assets}`)
+    info(log, `${ADD} Copy assets from ${chalk.bold(from)}`)
     return addPlugins(configuration, [new CopyPlugin([{from, ignore}])])
   }
 }
@@ -254,14 +253,14 @@ function addCssLoaders({cssLoaders, log, ...opts}: InternalOptions) {
       return addRules(configuration, cssLoaders)
     }
     else if(opts.hotReload) {
-      info(log, `${ADD} CSS loaders with style-loader`)
+      info(log, `${ADD} CSS loaders with ${chalk.bold('style-loader')}`)
       return addRules(configuration, cssLoaders.map(({use, ...rule}) => ({
         ...rule,
         use: ['style-loader', ...use],
       })))
     }
     else {
-      info(log, `${ADD} CSS loaders with extraction`)
+      info(log, `${ADD} CSS loaders with ${chalk.bold('extraction')}`)
       return addRules(addPlugins(configuration, [
         new MiniCssExtractPlugin({
           chunkFilename: `${opts.chunkFilename}.css`,
@@ -379,7 +378,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
     filename = '[name]',
     log = true,
     pattern = ['**/*.{j,t}s{,x}'],
-    source = '',
+    source = '.',
     target = 'web',
   } = options
   const {

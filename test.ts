@@ -70,7 +70,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with base options', () => {
-    const config = createConfiguration({log: 'base'})
+    const config = createConfiguration({log: 'Base'})
     expect(config).toEqual({
       ...expectedConfig,
       output: {
