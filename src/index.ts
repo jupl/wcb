@@ -67,7 +67,7 @@ export interface CSSLoader extends Webpack.RuleSetRule {
 
 /** Options for webpack build */
 export interface Options {
-  assets?: string | false
+  assets?: string | boolean
   assetsIgnore?: string[]
   atlOptions?: LoaderConfig
   chunkFilename?: string
@@ -214,9 +214,10 @@ function createBase({log, target, ...opts}: InternalOptions): Configuration {
   }
 }
 
-function addAssets({assets, assetsIgnore: ignore, log}: InternalOptions) {
+function addAssets({assetsIgnore: ignore, log, ...opts}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(typeof assets !== 'string') { return configuration }
+    if(opts.assets === false) { return configuration }
+    const assets = opts.assets === true ? opts.source : opts.assets
     const from = path.resolve(assets)
     try {
       accessSync(from, F_OK)
@@ -224,7 +225,7 @@ function addAssets({assets, assetsIgnore: ignore, log}: InternalOptions) {
     catch(e) {
       return configuration
     }
-    info(log, `${ADD} Copy assets`)
+    info(log, `${ADD} Copy assets from ${assets}`)
     return addPlugins(configuration, [new CopyPlugin([{from, ignore}])])
   }
 }

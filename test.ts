@@ -113,7 +113,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with assets', () => {
-    const {plugins, ...config} = createConfiguration({assets: ''})
+    const {plugins, ...config} = createConfiguration({assets: true})
     expect(config).toEqual({
       ...expectedConfig,
       output: {

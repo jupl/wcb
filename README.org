@@ -55,8 +55,12 @@ Given an existing configuration from ~createConfiguration~, add [[https://webpac
 Given an existing configuration from ~createConfiguration~, load additional Node files to each entry. Please note that this will return a new configuration and does *not* modify the given configuration.
 
 ** Options
-*** ~assets?: string~
-Path that contains static files to copy over to the final build. If path is relative, it is relative to ~process.cwd()~. If not specified no static files are copied over.
+*** ~assets: string | boolean = false~
+Path that contains static files to copy over to the final build. Path is relative to ~process.cwd()~. The following occurs in order from top to bottom:
+- If a custom string, that path is used
+- If ~true~ then path from ~source~ is used
+  - Source files that are built are ignored
+- If ~false~ no static files are copied over
 *** ~assetsIgnore: string[] = pattern~
 Glob patterns indicating files to ignore when using the ~assets~ option. By default it uses the ~pattern~ option.
 *** ~atlOptions?: object~

@@ -1,6 +1,6 @@
 {
   "name": "wcb",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "description": "Personal Webpack config builder",
   "author": "jupl",
   "license": "MIT",
