@@ -397,7 +397,6 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     expect(config).toEqual({
       ...expectedConfig,
       devServer,
-      devtool: 'eval-source-map',
       output: {
         ...expectedConfig.output,
         devtoolModuleFilenameTemplate: config

@@ -390,9 +390,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
       ? false
       : hotReload
         ? 'cheap-module-eval-source-map'
-        : devServer
-          ? 'eval-source-map'
-          : 'source-map',
+        : 'source-map',
   } = options
   return {
     assets,
