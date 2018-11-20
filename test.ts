@@ -40,7 +40,7 @@ const expectedConfig: Configuration = {
     ],
   },
   output: {
-    chunkFilename: '[id].js',
+    chunkFilename: '[name].js',
     filename: '[name].js',
     path: __dirname,
     publicPath: '/',
@@ -225,7 +225,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       plugins: [
         ...expectedPlugins,
         new MiniCssExtractPlugin({
-          chunkFilename: '[id].css',
+          chunkFilename: '[name].css',
           filename: '[name].css',
         }),
       ],

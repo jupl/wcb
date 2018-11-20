@@ -367,7 +367,6 @@ function optionsWithDefaults(options: Options): InternalOptions {
   const {
     assets = false,
     atlOptions = {},
-    chunkFilename = '[id]',
     common = false,
     cssLoaders = [],
     destination = '',
@@ -383,6 +382,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
   } = options
   const {
     assetsIgnore = pattern,
+    chunkFilename = filename,
     hotReload = !isNodeTarget(target) && TRUTHY.test(process.env.HOT_MODULES!),
   } = options
   const {
