@@ -1,6 +1,6 @@
 {
   "name": "wcb",
-  "version": "0.12.6",
+  "version": "0.13.0",
   "description": "Personal Webpack config builder",
   "author": "jupl",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "codecov": "npm run coverage && codecov",
     "lint": "tsc && npm run lint:file",
     "lint:file": "tslint --project tsconfig.json",
-    "test": "npm run clean && jest --config .jestrc.json",
+    "test": "npm run clean && jest --silent --config .jestrc.json",
     "test:update": "npm run test -- -u",
     "test:watch": "npm run test -- --watch",
     "pub": "npm run clean && npm run build && npm publish"
@@ -31,6 +31,7 @@
     "chalk": "^2.4.1",
     "copy-webpack-plugin": "^4.6.0",
     "globule": "^1.2.1",
+    "html-webpack-plugin": "^4.0.0-beta.4",
     "lodash": "^4.17.11",
     "mini-css-extract-plugin": "^0.4.4",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
@@ -47,6 +48,7 @@
     "@types/chalk": "^2.2.0",
     "@types/copy-webpack-plugin": "^4.4.2",
     "@types/globule": "^1.1.3",
+    "@types/html-webpack-plugin": "^3.2.0",
     "@types/jest": "^23.3.9",
     "@types/lodash": "^4.14.118",
     "@types/mini-css-extract-plugin": "^0.2.0",

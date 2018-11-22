@@ -4,6 +4,7 @@ import {F_OK} from 'constants'
 import CopyPlugin from 'copy-webpack-plugin'
 import {accessSync, existsSync} from 'fs'
 import {find} from 'globule'
+import HtmlPlugin, {Options as HtmlPluginOptions} from 'html-webpack-plugin'
 import {flow, memoize} from 'lodash'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 // @ts-ignore
@@ -15,6 +16,7 @@ import Webpack from 'webpack'
 // @ts-ignore
 import Weblog from 'webpack-log'
 import nodeExternals from 'webpack-node-externals'
+import {addPlugins, addRules, addToEntries} from './util'
 
 const logger = Weblog({name: 'wcb'})
 const ADD = chalk.cyan('+')
@@ -27,10 +29,10 @@ const IGNORE_GLOBS = [
   '!**/__tests__/**',
   '!**/{,*.}{test,spec}.*',
 ]
-const INVALID = '_-_|_-_'
 const NON_NODE_TARGETS: Target[] = ['web', 'webworker']
 const TRUTHY = /^(?:y|yes|true|1)$/i
 
+type Chunk = Webpack.compilation.Chunk
 type Devtool = Webpack.Configuration['devtool']
 type Target = Webpack.Configuration['target']
 
@@ -75,15 +77,21 @@ export interface Options {
   devServer?: boolean
   cssLoaders?: CSSLoader[]
   destination?: string
-  environment?: string
+  environment?: 'development' | 'production'
   filename?: string
   hotReload?: boolean
+  html?: boolean | string | HtmlPluginOptions
   log?: string | boolean
   pattern?: string[]
+  publicPath?: string
   source?: string
   sourceMaps?: Devtool
+  split?: boolean
   target?: Target
 }
+
+// Expose utilities for reuse
+export {addPlugins, addRules, addToEntries}
 
 /**
  * Build Webpack configuration
@@ -98,64 +106,13 @@ export function createConfiguration(options: Options = {}): Configuration {
     addProduction(internalOptions),
     addAssets(internalOptions),
     addNode(internalOptions),
+    addSplitting(internalOptions),
     addCommonChunk(internalOptions),
     addCssLoaders(internalOptions),
     addHotReload(internalOptions),
+    addHtml(internalOptions),
     post(internalOptions),
   ])(createBase(internalOptions))
-}
-
-/**
- * Add plugins to Webpack configuration
- * @param configuration Configuration to update
- * @param plugins Plugins to add
- * @return Updated configuration
- */
-export function addPlugins(
-  configuration: Configuration,
-  plugins: Webpack.Plugin[],
-): Configuration {
-  return {...configuration, plugins: [...configuration.plugins, ...plugins]}
-}
-
-/**
- * Add rules to Webpack configuration
- * @param configuration Configuration to update
- * @param rules Rules to add
- * @return Updated configuration
- */
-export function addRules(
-  configuration: Configuration,
-  rules: Webpack.RuleSetRule[],
-): Configuration {
-  return {
-    ...configuration,
-    module: {
-      ...configuration.module,
-      rules: [...configuration.module.rules, ...rules],
-    },
-  }
-}
-
-/**
- * Add modules for each entry to Webpack configuration
- * @param configuration Configuration to update
- * @param modules Modules to add
- * @return Updated configuration
- */
-export function addToEntries(
-  configuration: Configuration,
-  modules: string[],
-): Configuration {
-  return {
-    ...configuration,
-    entry: Object.keys(configuration.entry)
-      .filter(key => Array.isArray(configuration.entry[key]))
-      .reduce<Entry>((previous, key) => ({
-        ...previous,
-        [key]: [...modules, ...configuration.entry[key]],
-      }), {}),
-  }
 }
 
 type InternalOptions = { [P in keyof Options]-?: Options[P] }
@@ -172,9 +129,10 @@ function createBase({log, target, ...opts}: InternalOptions): Configuration {
         file: `.${path.sep}${file}`,
       }))
       .reduce((obj, {base, dir, file}) => ({
-        ...obj, [path.join(dir, base)]: [file],
+        ...obj,
+        [path.join(dir, base)]: [file],
       }), {}),
-    mode: 'none',
+    mode: opts.environment,
     module: {
       rules: [
         {
@@ -195,18 +153,16 @@ function createBase({log, target, ...opts}: InternalOptions): Configuration {
         },
       ],
     },
+    optimization: {minimize: false, splitChunks: false},
     output: {
       chunkFilename: `${opts.chunkFilename}.js`,
       filename: `${opts.filename}.js`,
       path: path.resolve(opts.destination),
-      publicPath: '/',
+      publicPath: opts.publicPath,
     },
     plugins: [
       new Webpack.DefinePlugin({
         'process.env.IS_CLIENT': JSON.stringify(String(!isNodeTarget(target))),
-        'process.env.NODE_ENV': opts.environment !== INVALID
-          ? JSON.stringify(opts.environment)
-          : 'undefined',
         'process.env.WEBPACK_BUILD': '"true"',
       }),
     ],
@@ -214,7 +170,7 @@ function createBase({log, target, ...opts}: InternalOptions): Configuration {
   }
 }
 
-function addAssets({assetsIgnore: ignore, log, ...opts}: InternalOptions) {
+function addAssets({assetsIgnore, log, ...opts}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(opts.assets === false) { return configuration }
     const from = path.resolve(opts.assets === true ? opts.source : opts.assets)
@@ -225,13 +181,14 @@ function addAssets({assetsIgnore: ignore, log, ...opts}: InternalOptions) {
       return configuration
     }
     info(log, `${ADD} Copy assets from ${chalk.bold(from)}`)
+    const ignore = [...IGNORE_GLOBS, ...assetsIgnore]
     return addPlugins(configuration, [new CopyPlugin([{from, ignore}])])
   }
 }
 
-function addCommonChunk({common}: InternalOptions) {
+function addCommonChunk({common, split}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
-    if(common === false) { return configuration }
+    if(split || common === false) { return configuration }
     const name = common === true ? 'common' : common
     return {
       ...configuration,
@@ -288,7 +245,10 @@ function addDevServer({devServer, log}: InternalOptions) {
 function addSourceMaps(opts: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(!opts.sourceMaps) { return configuration }
-    info(opts.log, `${ADD} Source maps`)
+    const suffix = typeof opts.sourceMaps === 'string'
+      ? ` (${chalk.bold(opts.sourceMaps)})`
+      : ''
+    info(opts.log, `${ADD} Source maps${suffix}`)
     return {
       ...configuration,
       devtool: opts.sourceMaps,
@@ -349,6 +309,72 @@ function addProduction({log, ...opts}: InternalOptions) {
   }
 }
 
+function addHtml({environment, html, log}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(html === false) { return configuration }
+    info(log, `${ADD} HTML generation`)
+    let baseOptions: HtmlPluginOptions = {
+      meta: {
+        'X-UA-Compatible': {
+          content: 'IE=edge,chrome=1',
+          'http-equiv': 'X-UA-Compatible',
+        },
+        charset: 'UTF-8',
+        viewport: [
+          'minumum-scale=1',
+          'initial-scale=1',
+          'width=device-width',
+          'shrink-to-fit=no',
+        ].join(','),
+      },
+      // tslint:disable-next-line:no-any
+      minify: (environment === 'production') as any,
+      title: 'Application',
+    }
+    switch(typeof html) {
+    case 'string':
+      baseOptions = {...baseOptions, template: html}
+      break
+    case 'object':
+      baseOptions = {...baseOptions, ...html}
+      break
+    default:
+      break
+    }
+    const plugins = Object
+      .keys(configuration.entry)
+      .map(chunk => new HtmlPlugin({
+        ...baseOptions,
+        chunks: [chunk],
+        filename: `${chunk}.html`,
+      }))
+    return addPlugins(configuration, plugins)
+  }
+}
+
+// https://hackernoon.com/f8a9df5b7758
+function addSplitting({log, split}: InternalOptions) {
+  return (configuration: Configuration) => {
+    if(!split) { return configuration }
+    info(log, `${ADD} Code splitting`)
+    return {
+      ...configuration,
+      optimization: {
+        ...configuration.optimization,
+        splitChunks: {
+          cacheGroups: {
+            vendor: {name: vendorChunkName, test: /[\\/]node_modules[\\/]/},
+          },
+          chunks: 'all',
+          maxInitialRequests: Infinity,
+          minSize: 0,
+          name: chunkName,
+        },
+      },
+    }
+  }
+}
+
 function post({log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     info(log, 'Done!')
@@ -371,22 +397,27 @@ function optionsWithDefaults(options: Options): InternalOptions {
     cssLoaders = [],
     destination = '',
     devServer = false,
-    environment = process.env.NODE_ENV !== undefined
-      ? process.env.NODE_ENV
-      : INVALID,
-    filename = '[name]',
+    environment = process.env.NODE_ENV === 'production'
+      ? 'production'
+      : 'development',
+    html = false,
     log = true,
     pattern = ['**/*.{j,t}s{,x}'],
     source = '.',
+    split = false,
     target = 'web',
   } = options
   const {
     assetsIgnore = pattern,
-    chunkFilename = filename,
+    filename = environment === 'production' && html !== false
+      ? '[contenthash]'
+      : '[name]',
     hotReload = !isNodeTarget(target) && TRUTHY.test(process.env.HOT_MODULES!),
+    publicPath = '',
   } = options
   const {
-    sourceMaps = environment === 'production'
+    chunkFilename = filename,
+    sourceMaps = environment !== 'development'
       ? false
       : hotReload
         ? 'cheap-module-eval-source-map'
@@ -404,10 +435,13 @@ function optionsWithDefaults(options: Options): InternalOptions {
     environment,
     filename,
     hotReload,
+    html,
     log,
     pattern,
+    publicPath,
     source,
     sourceMaps,
+    split,
     target,
   }
 }
@@ -433,4 +467,20 @@ function info(id: string | boolean, message: string) {
   if(id === false) { return }
   const prefix = id === true ? '' : `[${chalk.bold(id)}] `
   logger.info(`${prefix}${message}`)
+}
+
+function chunkName(_: unknown, chunks: Chunk[]) {
+  const names = chunks.map(({name}) => name).sort()
+  if(names.length === 1) { return names[0] }
+  const chunk = names
+    .map(name => name.replace(/\//g, '~'))
+    .join('+')
+  return `_chunks/${chunk}`
+}
+
+function vendorChunkName(module: any) { // tslint:disable-line:no-any
+  const pkg = module
+    .context
+    .match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)
+  return `_vendor/${pkg[1].replace('@', '')}`
 }

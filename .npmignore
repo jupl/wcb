@@ -4,7 +4,7 @@
 .gitignore
 .travis.yml
 extra.ts
-test.ts
+*.test.ts
 yarn.lock
 coverage
 fixtures

@@ -67,26 +67,32 @@ Glob patterns indicating files to ignore when using the ~assets~ option. By defa
 Additional options in [[https://github.com/s-panferov/awesome-typescript-loader][awesome-typescript-loader]] to override.
 *** ~chunkFilename: string = filename~
 [[https://webpack.js.org/configuration/output/#output-chunkfilename][Output chunk filename structure]] for JS/CSS. This is useful for [[https://webpack.js.org/guides/caching/][caching]] strategies. DO NOT INCLUDE FILE EXTENSION.
+*** ~common: string | boolean = false~
+If enabled and ~split~ is not enabled then a single file containing [[https://webpack.js.org/plugins/commons-chunk-plugin/][common code across multiple entry points]] will be included. This option is only use if a non-Node ~target~ is chosen and there are multiple entries to build. If value is ~true~ then name of file is called "common", whereas a string value allows a custom filename.
 *** ~cssLoaders: Loader[] = []~
 List of CSS [[https://webpack.js.org/configuration/module/#rule][loaders]] to incorporate. =extract-text-webpack-plugin= is used by default, whereas =style-loader= is used for hot reloading. Do *NOT* use =extract-text-webpack-plugin= nor =style-loader= as it will automatically be included.
-*** ~common: string | boolean = false~
-If enabled then a single file containing [[https://webpack.js.org/plugins/commons-chunk-plugin/][common code across multiple entry points]] will be included. This option is only use if a non-Node ~target~ is chosen and there are multiple entries to build. If value is ~true~ then name of file is called "common", whereas a string value allows a custom filename.
 *** ~destination: string = process.cwd()~
 Path where generated JS files will be placed in final build. If path is relative, it is relative to ~process.cwd()~.
 *** ~devServer: boolean = false~
 If enabled then configuration will include support for [[https://webpack.js.org/configuration/dev-server/][Webpack DevServer]].
-*** ~environment: string = process.env.NODE_ENV~
-Environment to build under. Currently "production" affects configuration changes.
+*** ~environment: 'development' | 'production' = process.env.NODE_ENV~
+Environment to build under.
 *** ~filename: string = '[name]'~
 [[https://webpack.js.org/configuration/output/#output-filename][Output bundle filename structure]] for JS/CSS. This is useful for [[https://webpack.js.org/guides/caching/][caching]] strategies. DO NOT INCLUDE FILE EXTENSION.
+*** ~html: boolean | string | object = false~
+If non-false, then use [[https://github.com/jantimon/html-webpack-plugin][HTML Webpack Plugin]] to generate HTML files for each file from ~source~. If an object is provided, then you can overwrite [[https://github.com/jantimon/html-webpack-plugin#options][options]]. If a string then it is used as the ~template~ option in the plugin.
 *** ~hotReload: boolean = process.env.HOT_MODULES === 'true'~
 If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpack hot reloading]] will be enabled. If using =webpack-dev-server= then use the ~server~ option. Otherwise if using =webpack-dev-middleware= or similar then use the ~middleware~ option.
 *** ~log?: string | boolean~
 If value is a string, then logging is done with the string value used as an identifier.
 *** ~pattern: string[] = ['**/*.ts{,x}']~
 Glob patterns to pick up as entry points relative to ~source~. If you want to use JavaScript as entry points then instead of ~ts{,x}~ use ~{j,t}s{,x}~.
+*** ~publicPath?: string~
+[[https://webpack.js.org/configuration/output/#output-publicpath][Public URL for output]]. Comes in useful when used in combination with the ~html~ option.
 *** ~source: string = process.cwd()~
 Path where source files will be used for building. If path is relative, it is relative to ~process.cwd()~.
+*** ~split: boolean = false~
+If true then split code as outlined [[https://hackernoon.com/f8a9df5b7758][here]].
 *** ~sourceMaps?: Devtool~
 [[https://webpack.js.org/configuration/devtool/#devtool][Webpack devtool]] option for source maps. By default the following occurs in order from top to bottom:
 - If environment is ~'production'~ then ~false~
