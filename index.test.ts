@@ -474,13 +474,13 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       ...expectedConfig,
       output: {...expectedConfig.output, devtoolModuleFilenameTemplate},
     })
-    expect(plugins1).toHaveLength(4)
+    expect(plugins1).toHaveLength(5)
     expect(plugins1).toEqual(expect.arrayContaining(expectedPlugins))
-    expect(plugins2).toHaveLength(4)
+    expect(plugins2).toHaveLength(5)
     expect(plugins2).toEqual(expect.arrayContaining(expectedPlugins))
-    expect(plugins3).toHaveLength(6)
+    expect(plugins3).toHaveLength(7)
     expect(plugins3).toEqual(expect.arrayContaining(expectedPlugins))
-    expect(plugins4).toHaveLength(4)
+    expect(plugins4).toHaveLength(5)
     expect(plugins4).toEqual(expect.arrayContaining(expectedPlugins))
   })
 })

@@ -11,6 +11,8 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import OptimizeCssPlugin from 'optimize-css-assets-webpack-plugin'
 import path from 'path'
 // @ts-ignore
+import ScriptExtHtmlPlugin from 'script-ext-html-webpack-plugin'
+// @ts-ignore
 import TerserPlugin from 'terser-webpack-plugin'
 import Webpack from 'webpack'
 // @ts-ignore
@@ -186,9 +188,10 @@ function addAssets({assetsIgnore, log, ...opts}: InternalOptions) {
   }
 }
 
-function addCommonChunk({common, split}: InternalOptions) {
+function addCommonChunk({common, split, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(split || common === false) { return configuration }
+    info(log, `${ADD} common chunk`)
     const name = common === true ? 'common' : common
     return {
       ...configuration,
@@ -216,18 +219,16 @@ function addCssLoaders({cssLoaders, log, ...opts}: InternalOptions) {
         use: ['style-loader', ...use],
       })))
     }
-    else {
-      info(log, `${ADD} CSS loaders with ${chalk.bold('extraction')}`)
-      return addRules(addPlugins(configuration, [
-        new MiniCssExtractPlugin({
-          chunkFilename: `${opts.chunkFilename}.css`,
-          filename: `${opts.filename}.css`,
-        }),
-      ]), cssLoaders.map(({use, ...rule}) => ({
-        ...rule,
-        use: [MiniCssExtractPlugin.loader, ...use],
-      })))
-    }
+    info(log, `${ADD} CSS loaders with ${chalk.bold('extraction')}`)
+    return addRules(addPlugins(configuration, [
+      new MiniCssExtractPlugin({
+        chunkFilename: `${opts.chunkFilename}.css`,
+        filename: `${opts.filename}.css`,
+      }),
+    ]), cssLoaders.map(({use, ...rule}) => ({
+      ...rule,
+      use: [MiniCssExtractPlugin.loader, ...use],
+    })))
   }
 }
 
@@ -314,6 +315,7 @@ function addHtml({environment, html, log}: InternalOptions) {
     if(html === false) { return configuration }
     info(log, `${ADD} HTML generation`)
     let baseOptions: HtmlPluginOptions = {
+      inject: 'head',
       meta: {
         'X-UA-Compatible': {
           content: 'IE=edge,chrome=1',
@@ -350,14 +352,16 @@ function addHtml({environment, html, log}: InternalOptions) {
     default:
       break
     }
-    const plugins = Object
-      .keys(configuration.entry)
-      .map(chunk => new HtmlPlugin({
-        ...baseOptions,
-        chunks: [chunk],
-        filename: `${chunk}.html`,
-      }))
-    return addPlugins(configuration, plugins)
+    const entries = Object.keys(configuration.entry)
+    const plugins = entries.map(chunk => new HtmlPlugin({
+      ...baseOptions,
+      chunks: [chunk],
+      filename: `${chunk}.html`,
+    }))
+    return addPlugins(configuration, [
+      ...plugins,
+      new ScriptExtHtmlPlugin({defaultAttribute: 'async', defer: entries}),
+    ])
   }
 }
 
