@@ -334,22 +334,18 @@ function addHtml({environment, html, log}: InternalOptions) {
     case 'string':
       baseOptions = {
         ...baseOptions,
-        meta: {
-          ...baseOptions.meta,
-          charset: {charset: 'UTF-8'},
-        },
+        meta: {...baseOptions.meta, charset: {charset: 'UTF-8'}},
         template: html,
       }
       break
     case 'object':
-      baseOptions = {
-        ...baseOptions,
-        meta: {
-          ...baseOptions.meta,
-          charset: {charset: 'UTF-8'},
-        },
-        ...html,
+      if(html.template !== undefined) {
+        baseOptions = {
+          ...baseOptions,
+          meta: {...baseOptions.meta, charset: {charset: 'UTF-8'}},
+        }
       }
+      baseOptions = {...baseOptions, ...html}
       break
     default:
       break

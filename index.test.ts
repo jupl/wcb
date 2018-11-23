@@ -468,6 +468,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       environment: 'production',
       html: {template: '.layout.html'},
     })
+    const {plugins: plugins4} = createConfiguration({html: {}})
     const {devtoolModuleFilenameTemplate} = config.output
     expect(config).toEqual({
       ...expectedConfig,
@@ -479,5 +480,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     expect(plugins2).toEqual(expect.arrayContaining(expectedPlugins))
     expect(plugins3).toHaveLength(6)
     expect(plugins3).toEqual(expect.arrayContaining(expectedPlugins))
+    expect(plugins4).toHaveLength(4)
+    expect(plugins4).toEqual(expect.arrayContaining(expectedPlugins))
   })
 })
