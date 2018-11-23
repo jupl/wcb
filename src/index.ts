@@ -319,7 +319,6 @@ function addHtml({environment, html, log}: InternalOptions) {
           content: 'IE=edge,chrome=1',
           'http-equiv': 'X-UA-Compatible',
         },
-        charset: 'UTF-8',
         viewport: [
           'minimum-scale=1',
           'initial-scale=1',
@@ -333,10 +332,24 @@ function addHtml({environment, html, log}: InternalOptions) {
     }
     switch(typeof html) {
     case 'string':
-      baseOptions = {...baseOptions, template: html}
+      baseOptions = {
+        ...baseOptions,
+        meta: {
+          ...baseOptions.meta,
+          charset: {charset: 'UTF-8'},
+        },
+        template: html,
+      }
       break
     case 'object':
-      baseOptions = {...baseOptions, ...html}
+      baseOptions = {
+        ...baseOptions,
+        meta: {
+          ...baseOptions.meta,
+          charset: {charset: 'UTF-8'},
+        },
+        ...html,
+      }
       break
     default:
       break
