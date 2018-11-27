@@ -483,8 +483,8 @@ function info(id: string | boolean, message: string) {
 }
 
 function chunkName(_: unknown, chunks: Chunk[]) {
-  const names = chunks.map(({name}) => name).sort()
-  if(names.length === 1) { return names[0] }
+  const names = chunks.map(({name}) => name).filter(name => !!name).sort()
+  if(names.length <= 1) { return names[0] }
   const chunk = names
     .map(name => name.replace(/\//g, '~'))
     .join('+')
