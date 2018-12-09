@@ -117,7 +117,6 @@ function createBase({target, ...opts}: InternalOptions): Configuration {
       chunkFilename: `${opts.chunkFilename}.js`,
       filename: `${opts.filename}.js`,
       path: path.resolve(opts.destination),
-      publicPath: opts.publicPath,
     },
     plugins: [
       ...plugins,
@@ -389,7 +388,6 @@ function optionsWithDefaults(options: Options): InternalOptions {
       ? '[contenthash]'
       : '[name]',
     hotReload = !isNodeTarget(target) && TRUTHY.test(process.env.HOT_MODULES!),
-    publicPath = '',
   } = options
   const {
     chunkFilename = filename,
@@ -415,7 +413,6 @@ function optionsWithDefaults(options: Options): InternalOptions {
     html,
     log,
     pattern,
-    publicPath,
     source,
     sourceMaps,
     split,

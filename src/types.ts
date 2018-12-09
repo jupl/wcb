@@ -14,7 +14,6 @@ export interface Entry {
 export interface Output extends Webpack.Output {
   path: string
   filename: string
-  publicPath: string
 }
 
 /** Webpack module resolution */
@@ -54,7 +53,6 @@ export interface Options {
   html?: boolean | string | HtmlPluginOptions
   log?: string | boolean
   pattern?: string[]
-  publicPath?: string
   source?: string
   sourceMaps?: Devtool
   split?: boolean

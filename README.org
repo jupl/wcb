@@ -89,8 +89,6 @@ If enabled then [[https://webpack.js.org/concepts/hot-module-replacement/][Webpa
 If value is a string, then logging is done with the string value used as an identifier.
 *** ~pattern: string[] = ['**/*.ts{,x}']~
 Glob patterns to pick up as entry points relative to ~source~. If you want to use JavaScript as entry points then instead of ~ts{,x}~ use ~{j,t}s{,x}~.
-*** ~publicPath?: string~
-[[https://webpack.js.org/configuration/output/#output-publicpath][Public URL for output]]. Comes in useful when used in combination with the ~html~ option.
 *** ~source: string = process.cwd()~
 Path where source files will be used for building. If path is relative, it is relative to ~process.cwd()~.
 *** ~split: boolean = false~
