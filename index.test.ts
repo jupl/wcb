@@ -35,7 +35,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
 
   it('should build with base overrides', () => {
     const config = createConfiguration({
-      base: {
+      webpack: {
         bail: true,
         module: {rules: [], strictExportPresence: true},
         optimization: {minimize: true, usedExports: true},
@@ -391,8 +391,8 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
 
   it('should build with dev server', () => {
     const config = createConfiguration({
-      base: {devServer: {stats: {}}},
       devServer: true,
+      webpack: {devServer: {stats: {}}},
     })
     const {devtoolModuleFilenameTemplate} = config.output
     expect(config).toEqual({

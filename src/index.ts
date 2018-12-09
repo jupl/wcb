@@ -73,9 +73,9 @@ function createBase({target, ...opts}: InternalOptions): Configuration {
     output,
     plugins = [],
     resolve,
-  } = opts.base
+  } = opts.webpack
   return {
-    ...opts.base,
+    ...opts.webpack,
     target,
     context: path.resolve(opts.source),
     entry: find([...opts.pattern, ...IGNORE_GLOBS], {srcBase: opts.source})
@@ -367,7 +367,6 @@ function optionsWithDefaults(options: Options): InternalOptions {
   const {
     assets = false,
     atlOptions = {},
-    base = {},
     common = false,
     cssLoaders = [],
     destination = '',
@@ -381,6 +380,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
     source = '.',
     split = false,
     target = 'web',
+    webpack = {},
   } = options
   const {
     assetsIgnore = pattern,
@@ -401,7 +401,6 @@ function optionsWithDefaults(options: Options): InternalOptions {
     assets,
     assetsIgnore,
     atlOptions,
-    base,
     chunkFilename,
     common,
     cssLoaders,
@@ -417,6 +416,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
     sourceMaps,
     split,
     target,
+    webpack,
   }
 }
 

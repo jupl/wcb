@@ -65,8 +65,6 @@ Path that contains static files to copy over to the final build. Path is relativ
 Glob patterns indicating files to ignore when using the ~assets~ option. By default it uses the ~pattern~ option.
 *** ~atlOptions?: object~
 Additional options in [[https://github.com/s-panferov/awesome-typescript-loader][awesome-typescript-loader]] to override.
-*** ~base?: object~
-[[https://webpack.js.org/configuration/#options][Webpack configuration options]] to start out with. *This is an advanced option. Take care in which options are specified as this builder can override overlapping settings.*
 *** ~chunkFilename: string = filename~
 [[https://webpack.js.org/configuration/output/#output-chunkfilename][Output chunk filename structure]] for JS/CSS. This is useful for [[https://webpack.js.org/guides/caching/][caching]] strategies. DO NOT INCLUDE FILE EXTENSION.
 *** ~common: string | boolean = false~
@@ -100,3 +98,5 @@ If true then split code as outlined [[https://hackernoon.com/f8a9df5b7758][here]
 - Otherwise then ~'source-map'~
 *** ~target: string = 'web'~
 [[https://webpack.js.org/configuration/target/][Webpack targets]] to build to.
+*** ~webpack?: object~
+[[https://webpack.js.org/configuration/#options][Webpack configuration options]] to start out with. *This is an advanced option. Take care in which options are specified as this builder can override overlapping settings.*

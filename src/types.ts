@@ -41,7 +41,6 @@ export interface Options {
   assets?: string | boolean
   assetsIgnore?: string[]
   atlOptions?: LoaderConfig
-  base?: Webpack.Configuration
   chunkFilename?: string
   common?: string | boolean
   devServer?: boolean
@@ -57,4 +56,5 @@ export interface Options {
   sourceMaps?: Devtool
   split?: boolean
   target?: Target
+  webpack?: Webpack.Configuration
 }
