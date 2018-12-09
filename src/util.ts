@@ -1,5 +1,5 @@
 import Webpack from 'webpack'
-import {Configuration, Entry} from '.'
+import {Configuration, Entry} from './types'
 
 /**
  * Add plugins to Webpack configuration

@@ -1,4 +1,3 @@
-import {LoaderConfig} from 'awesome-typescript-loader/dist/interfaces'
 import chalk from 'chalk'
 import {F_OK} from 'constants'
 import CopyPlugin from 'copy-webpack-plugin'
@@ -18,6 +17,7 @@ import Webpack from 'webpack'
 // @ts-ignore
 import Weblog from 'webpack-log'
 import nodeExternals from 'webpack-node-externals'
+import {Configuration, Options} from './types'
 import {addPlugins, addRules, addToEntries} from './util'
 
 const logger = Weblog({name: 'wcb'})
@@ -35,62 +35,7 @@ const NON_NODE_TARGETS: Target[] = ['web', 'webworker']
 const TRUTHY = /^(?:y|yes|true|1)$/i
 
 type Chunk = Webpack.compilation.Chunk
-type Devtool = Webpack.Configuration['devtool']
 type Target = Webpack.Configuration['target']
-
-/** Webpack entries */
-export interface Entry {
-  [name: string]: string[]
-}
-
-/** Webpack output */
-export interface Output extends Webpack.Output {
-  path: string
-  filename: string
-  publicPath: string
-}
-
-/** Webpack module resolution */
-export interface Resolve extends Webpack.Resolve {
-  extensions: string[]
-}
-
-/** Webpack configuration specific for this application */
-export interface Configuration extends Webpack.Configuration {
-  entry: Entry
-  module: Webpack.Module
-  output: Output
-  plugins: Webpack.Plugin[]
-  resolve: Resolve
-}
-
-/** Webpack loader for CSS family files */
-export interface CSSLoader extends Webpack.RuleSetRule {
-  use: Webpack.Loader[]
-}
-
-/** Options for webpack build */
-export interface Options {
-  assets?: string | boolean
-  assetsIgnore?: string[]
-  atlOptions?: LoaderConfig
-  chunkFilename?: string
-  common?: string | boolean
-  devServer?: boolean
-  cssLoaders?: CSSLoader[]
-  destination?: string
-  environment?: 'development' | 'production'
-  filename?: string
-  hotReload?: boolean
-  html?: boolean | string | HtmlPluginOptions
-  log?: string | boolean
-  pattern?: string[]
-  publicPath?: string
-  source?: string
-  sourceMaps?: Devtool
-  split?: boolean
-  target?: Target
-}
 
 // Expose utilities for reuse
 export {addPlugins, addRules, addToEntries}
@@ -102,7 +47,7 @@ export {addPlugins, addRules, addToEntries}
  */
 export function createConfiguration(options: Options = {}): Configuration {
   const internalOptions = optionsWithDefaults(options)
-  return flow([
+  const configuration = flow([
     addDevServer(internalOptions),
     addSourceMaps(internalOptions),
     addProduction(internalOptions),
@@ -113,15 +58,24 @@ export function createConfiguration(options: Options = {}): Configuration {
     addCssLoaders(internalOptions),
     addHotReload(internalOptions),
     addHtml(internalOptions),
-    post(internalOptions),
   ])(createBase(internalOptions))
+  info(internalOptions.log, 'Done!')
+  return configuration
 }
 
 type InternalOptions = { [P in keyof Options]-?: Options[P] }
 
-function createBase({log, target, ...opts}: InternalOptions): Configuration {
-  info(log, 'Building...')
+function createBase({target, ...opts}: InternalOptions): Configuration {
+  info(opts.log, 'Building...')
+  const {
+    module: {rules = [], ...module} = {},
+    optimization,
+    output,
+    plugins = [],
+    resolve,
+  } = opts.base
   return {
+    ...opts.base,
     target,
     context: path.resolve(opts.source),
     entry: find([...opts.pattern, ...IGNORE_GLOBS], {srcBase: opts.source})
@@ -130,13 +84,15 @@ function createBase({log, target, ...opts}: InternalOptions): Configuration {
         dir: path.dirname(file),
         file: `.${path.sep}${file}`,
       }))
-      .reduce((obj, {base, dir, file}) => ({
+      .reduce((obj, {base: b, dir, file}) => ({
         ...obj,
-        [path.join(dir, base)]: [file],
+        [path.join(dir, b)]: [file],
       }), {}),
     mode: opts.environment,
     module: {
+      ...module,
       rules: [
+        ...rules,
         {
           exclude: /node_modules/,
           test: /\.[jt]sx?$/,
@@ -155,20 +111,22 @@ function createBase({log, target, ...opts}: InternalOptions): Configuration {
         },
       ],
     },
-    optimization: {minimize: false, splitChunks: false},
+    optimization: {...optimization, minimize: false, splitChunks: false},
     output: {
+      ...output,
       chunkFilename: `${opts.chunkFilename}.js`,
       filename: `${opts.filename}.js`,
       path: path.resolve(opts.destination),
       publicPath: opts.publicPath,
     },
     plugins: [
+      ...plugins,
       new Webpack.DefinePlugin({
         'process.env.IS_CLIENT': JSON.stringify(String(!isNodeTarget(target))),
         'process.env.WEBPACK_BUILD': '"true"',
       }),
     ],
-    resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
+    resolve: {...resolve, extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
   }
 }
 
@@ -236,9 +194,18 @@ function addDevServer({devServer, log}: InternalOptions) {
   return (configuration: Configuration): Configuration => {
     if(!devServer) { return configuration }
     info(log, `${ADD} Webpack dev server`)
+    const {devServer: ds = {}} = configuration
     return {
       ...configuration,
-      devServer: {stats: {all: false, builtAt: true, errors: true}},
+      devServer: {
+        ...ds,
+        stats: {
+          ...(typeof ds.stats === 'object' ? ds.stats : {}),
+          all: false,
+          builtAt: true,
+          errors: true,
+        },
+      },
     }
   }
 }
@@ -282,6 +249,7 @@ function addNode({log, target}: InternalOptions) {
     const config: Configuration = {
       ...configuration,
       node: {
+        ...configuration.node,
         Buffer: false,
         __dirname: false,
         __filename: false,
@@ -375,6 +343,7 @@ function addSplitting({log, split}: InternalOptions) {
       optimization: {
         ...configuration.optimization,
         splitChunks: {
+          ...configuration.optimization.splitChunks,
           cacheGroups: {
             vendor: {name: vendorChunkName, test: /[\\/]node_modules[\\/]/},
           },
@@ -385,13 +354,6 @@ function addSplitting({log, split}: InternalOptions) {
         },
       },
     }
-  }
-}
-
-function post({log}: InternalOptions) {
-  return (configuration: Configuration): Configuration => {
-    info(log, 'Done!')
-    return configuration
   }
 }
 
@@ -406,6 +368,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
   const {
     assets = false,
     atlOptions = {},
+    base = {},
     common = false,
     cssLoaders = [],
     destination = '',
@@ -440,6 +403,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
     assets,
     assetsIgnore,
     atlOptions,
+    base,
     chunkFilename,
     common,
     cssLoaders,

@@ -1,62 +1,15 @@
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import {sep} from 'path'
-import {DefinePlugin, HotModuleReplacementPlugin, Plugin} from 'webpack'
-import {CSSLoader, Configuration, createConfiguration} from './src'
+import {DefinePlugin, HotModuleReplacementPlugin} from 'webpack'
+import {
+  cssLoaders,
+  devServer,
+  expectedConfig,
+  expectedPlugins,
+} from './fixtures'
+import {createConfiguration} from './src'
 
-// tslint:disable:no-duplicate-string no-magic-numbers
-
-const cssLoaders: CSSLoader[] = [
-  {test: /\.css$/, use: ['css-loader']},
-  {test: /\.scss$/, use: ['css-loader', 'sass-loader']},
-]
-const devServer: Configuration['devServer'] = {
-  stats: {all: false, builtAt: true, errors: true},
-}
-const expectedConfig: Configuration = {
-  context: __dirname,
-  devtool: 'source-map',
-  entry: {
-    extra: [`.${sep}extra.ts`],
-    'src/index': [`.${sep}src${sep}index.ts`],
-    'src/util': [`.${sep}src${sep}util.ts`],
-  },
-  mode: 'development',
-  module: {
-    rules: [
-      {
-        exclude: /node_modules/,
-        test: /\.[jt]sx?$/,
-        use: [
-          {
-            loader: 'awesome-typescript-loader',
-            options: {
-              cacheDirectory: 'node_modules/.awcache',
-              forceIsolatedModules: true,
-              transpileOnly: true,
-              useCache: false,
-            },
-          },
-        ],
-      },
-    ],
-  },
-  optimization: {minimize: false, splitChunks: false},
-  output: {
-    chunkFilename: '[name].js',
-    filename: '[name].js',
-    path: __dirname,
-    publicPath: '',
-  },
-  plugins: undefined!,
-  resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
-  target: 'web',
-}
-const expectedPlugins: Plugin[] = [
-  new DefinePlugin({
-    'process.env.IS_CLIENT': '"true"',
-    'process.env.WEBPACK_BUILD': '"true"',
-  }),
-]
+// tslint:disable:no-duplicate-string
 
 describe('createConfig', () => { // tslint:disable-line:no-big-function
   let env: string | undefined
@@ -70,13 +23,44 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     process.env.NODE_ENV = env // tslint:disable-line:no-object-mutation
   })
 
-  it('should build with base options', () => {
+  it('should build with default options', () => {
     const config = createConfiguration({log: 'Base'})
     const {devtoolModuleFilenameTemplate} = config.output
     expect(config).toEqual({
       ...expectedConfig,
       output: {...expectedConfig.output, devtoolModuleFilenameTemplate},
       plugins: expectedPlugins,
+    })
+  })
+
+  it('should build with base overrides', () => {
+    const config = createConfiguration({
+      base: {
+        bail: true,
+        module: {rules: [], strictExportPresence: true},
+        optimization: {minimize: true, usedExports: true},
+        output: {devtoolLineToLine: true, filename: '[hash].js'},
+        plugins: [],
+        resolve: {enforceExtension: true, extensions: []},
+      },
+    })
+    const {devtoolModuleFilenameTemplate} = config.output
+    expect(config).toEqual({
+      ...expectedConfig,
+      bail: true,
+      module: {
+        ...expectedConfig.module,
+        rules: [...expectedConfig.module.rules],
+        strictExportPresence: true,
+      },
+      optimization: {...expectedConfig.optimization, usedExports: true},
+      output: {
+        ...expectedConfig.output,
+        devtoolModuleFilenameTemplate,
+        devtoolLineToLine: true,
+      },
+      plugins: [...expectedPlugins],
+      resolve: {...expectedConfig.resolve, enforceExtension: true},
     })
   })
 
@@ -231,9 +215,17 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
           'webpack-hot-middleware/client',
           `.${sep}extra.ts`,
         ],
+        fixtures: [
+          'webpack-hot-middleware/client',
+          `.${sep}fixtures.ts`,
+        ],
         'src/index': [
           'webpack-hot-middleware/client',
           `.${sep}src${sep}index.ts`,
+        ],
+        'src/types': [
+          'webpack-hot-middleware/client',
+          `.${sep}src${sep}types.ts`,
         ],
         'src/util': [
           'webpack-hot-middleware/client',
@@ -328,9 +320,17 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
           'webpack-hot-middleware/client',
           `.${sep}extra.ts`,
         ],
+        fixtures: [
+          'webpack-hot-middleware/client',
+          `.${sep}fixtures.ts`,
+        ],
         'src/index': [
           'webpack-hot-middleware/client',
           `.${sep}src${sep}index.ts`,
+        ],
+        'src/types': [
+          'webpack-hot-middleware/client',
+          `.${sep}src${sep}types.ts`,
         ],
         'src/util': [
           'webpack-hot-middleware/client',
@@ -390,7 +390,10 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with dev server', () => {
-    const config = createConfiguration({devServer: true})
+    const config = createConfiguration({
+      base: {devServer: {stats: {}}},
+      devServer: true,
+    })
     const {devtoolModuleFilenameTemplate} = config.output
     expect(config).toEqual({
       ...expectedConfig,
@@ -427,7 +430,6 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   it('should build with code splitting', () => {
     const config = createConfiguration({split: true})
     const {optimization, output: {devtoolModuleFilenameTemplate}} = config
-    if(optimization === undefined) { throw new Error() }
     const {splitChunks} = optimization
     if(typeof splitChunks !== 'object') { throw new Error() }
     if(typeof splitChunks.cacheGroups !== 'object') { throw new Error() }
@@ -474,13 +476,13 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
       ...expectedConfig,
       output: {...expectedConfig.output, devtoolModuleFilenameTemplate},
     })
-    expect(plugins1).toHaveLength(5)
+    expect(plugins1).toHaveLength(7)
     expect(plugins1).toEqual(expect.arrayContaining(expectedPlugins))
-    expect(plugins2).toHaveLength(5)
+    expect(plugins2).toHaveLength(7)
     expect(plugins2).toEqual(expect.arrayContaining(expectedPlugins))
-    expect(plugins3).toHaveLength(7)
+    expect(plugins3).toHaveLength(9)
     expect(plugins3).toEqual(expect.arrayContaining(expectedPlugins))
-    expect(plugins4).toHaveLength(5)
+    expect(plugins4).toHaveLength(7)
     expect(plugins4).toEqual(expect.arrayContaining(expectedPlugins))
   })
 })
