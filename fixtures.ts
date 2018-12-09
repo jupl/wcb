@@ -49,7 +49,6 @@ export const expectedConfig: Configuration = {
     chunkFilename: '[name].js',
     filename: '[name].js',
     path: __dirname,
-    publicPath: '',
   },
   plugins: undefined!,
   resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
