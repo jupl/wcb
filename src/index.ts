@@ -283,41 +283,41 @@ function addHtml({environment, html, log}: InternalOptions) {
     info(log, `${ADD} HTML generation`)
     let baseOptions: HtmlPluginOptions = {
       inject: 'head',
-      meta: {
-        'X-UA-Compatible': {
-          content: 'IE=edge,chrome=1',
-          'http-equiv': 'X-UA-Compatible',
-        },
-        viewport: [
-          'minimum-scale=1',
-          'initial-scale=1',
-          'width=device-width',
-          'shrink-to-fit=no',
-        ].join(','),
-      },
       // tslint:disable-next-line:no-any
       minify: (environment === 'production') as any,
       title: 'Application',
     }
+    const baseMeta = {
+      'X-UA-Compatible': {
+        content: 'IE=edge,chrome=1',
+        'http-equiv': 'X-UA-Compatible',
+      },
+      charset: {charset: 'UTF-8'},
+      viewport: [
+        'minimum-scale=1',
+        'initial-scale=1',
+        'width=device-width',
+        'shrink-to-fit=no',
+      ].join(','),
+    }
+    let addMeta = true
     switch(typeof html) {
     case 'string':
-      baseOptions = {
-        ...baseOptions,
-        meta: {...baseOptions.meta, charset: {charset: 'UTF-8'}},
-        template: html,
-      }
+      addMeta = false
+      baseOptions = {...baseOptions, template: html}
       break
     case 'object':
-      if(html.template !== undefined) {
-        baseOptions = {
-          ...baseOptions,
-          meta: {...baseOptions.meta, charset: {charset: 'UTF-8'}},
-        }
-      }
+      addMeta = html.template === undefined
       baseOptions = {...baseOptions, ...html}
       break
     default:
       break
+    }
+    if(addMeta) {
+      baseOptions = {
+        ...baseOptions,
+        meta: {...baseMeta, ...baseOptions.meta},
+      }
     }
     const entries = Object.keys(configuration.entry)
     const plugins = entries.map(chunk => new HtmlPlugin({
