@@ -51,7 +51,10 @@ export const expectedConfig: Configuration = {
     path: __dirname,
   },
   plugins: undefined!,
-  resolve: {extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
+  resolve: {
+    extensions: ['.js', '.json', '.jsx', '.ts', '.tsx'],
+    plugins: [],
+  },
   target: 'web',
 }
 

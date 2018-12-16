@@ -13,12 +13,10 @@ import {createConfiguration} from './src'
 
 describe('createConfig', () => { // tslint:disable-line:no-big-function
   let env: string | undefined
-
   beforeEach(() => {
     env = process.env.NODE_ENV
     delete process.env.NODE_ENV // tslint:disable-line:no-object-mutation
   })
-
   afterEach(() => {
     process.env.NODE_ENV = env // tslint:disable-line:no-object-mutation
   })
@@ -484,5 +482,17 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
     expect(plugins3).toEqual(expect.arrayContaining(expectedPlugins))
     expect(plugins4).toHaveLength(7)
     expect(plugins4).toEqual(expect.arrayContaining(expectedPlugins))
+  })
+
+  it('should build with paths', () => {
+    const {resolve: {plugins, ...resolve}, ...config} =
+      createConfiguration({paths: true, webpack: {resolve: {plugins: []}}})
+    const {devtoolModuleFilenameTemplate} = config.output
+    expect({...config, resolve: {...resolve, plugins: []}}).toEqual({
+      ...expectedConfig,
+      output: {...expectedConfig.output, devtoolModuleFilenameTemplate},
+      plugins: expectedPlugins,
+    })
+    expect(plugins).toHaveLength(1)
   })
 })

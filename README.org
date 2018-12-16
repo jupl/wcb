@@ -98,5 +98,7 @@ If true then split code as outlined [[https://hackernoon.com/f8a9df5b7758][here]
 - Otherwise then ~'source-map'~
 *** ~target: string = 'web'~
 [[https://webpack.js.org/configuration/target/][Webpack targets]] to build to.
+*** ~paths: boolean = false~
+If true then add support for paths option in tsconfig via [[https://github.com/dividab/tsconfig-paths-webpack-plugin][tsconfig-paths-webpack-plugin]].
 *** ~webpack?: object~
 [[https://webpack.js.org/configuration/#options][Webpack configuration options]] to start out with. *This is an advanced option. Take care in which options are specified as this builder can override overlapping settings.*

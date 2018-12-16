@@ -13,6 +13,7 @@ import path from 'path'
 import ScriptExtHtmlPlugin from 'script-ext-html-webpack-plugin'
 // @ts-ignore
 import TerserPlugin from 'terser-webpack-plugin'
+import TSConfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import Webpack from 'webpack'
 // @ts-ignore
 import Weblog from 'webpack-log'
@@ -48,6 +49,7 @@ export {addPlugins, addRules, addToEntries}
 export function createConfiguration(options: Options = {}): Configuration {
   const internalOptions = optionsWithDefaults(options)
   const configuration = flow([
+    addPaths(internalOptions),
     addDevServer(internalOptions),
     addSourceMaps(internalOptions),
     addProduction(internalOptions),
@@ -72,7 +74,7 @@ function createBase({target, ...opts}: InternalOptions): Configuration {
     optimization,
     output,
     plugins = [],
-    resolve,
+    resolve = {},
   } = opts.webpack
   return {
     ...opts.webpack,
@@ -125,7 +127,11 @@ function createBase({target, ...opts}: InternalOptions): Configuration {
         'process.env.WEBPACK_BUILD': '"true"',
       }),
     ],
-    resolve: {...resolve, extensions: ['.js', '.json', '.jsx', '.ts', '.tsx']},
+    resolve: {
+      ...resolve,
+      extensions: ['.js', '.json', '.jsx', '.ts', '.tsx'],
+      plugins: Array.isArray(resolve.plugins) ? resolve.plugins : [],
+    },
   }
 }
 
@@ -356,6 +362,25 @@ function addSplitting({log, split}: InternalOptions) {
   }
 }
 
+function addPaths({log, paths}: InternalOptions) {
+  return (configuration: Configuration) => {
+    if(!paths) { return configuration }
+    info(log, `${ADD} TS config paths`)
+    return {
+      ...configuration,
+      resolve: {
+        ...configuration.resolve,
+        plugins: [
+          ...configuration.resolve.plugins,
+          new TSConfigPathsPlugin({
+            extensions: configuration.resolve.extensions,
+          }),
+        ],
+      },
+    }
+  }
+}
+
 function isNodeTarget(target: Target, rendererCounts = false) {
   const targets: Target[] = rendererCounts
     ? NON_NODE_TARGETS
@@ -376,6 +401,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
       : 'development',
     html = false,
     log = true,
+    paths = false,
     pattern = ['**/*.{j,t}s{,x}'],
     source = '.',
     split = false,
@@ -411,6 +437,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
     hotReload,
     html,
     log,
+    paths,
     pattern,
     source,
     sourceMaps,

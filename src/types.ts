@@ -19,6 +19,7 @@ export interface Output extends Webpack.Output {
 /** Webpack module resolution */
 export interface Resolve extends Webpack.Resolve {
   extensions: string[]
+  plugins: Webpack.ResolvePlugin[]
 }
 
 /** Webpack configuration specific for this application */
@@ -52,6 +53,7 @@ export interface Options {
   html?: boolean | string | HtmlPluginOptions
   log?: string | boolean
   pattern?: string[]
+  paths?: boolean
   source?: string
   sourceMaps?: Devtool
   split?: boolean
