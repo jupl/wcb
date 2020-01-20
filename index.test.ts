@@ -172,7 +172,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
   })
 
   it('should build with CSS loaders', () => {
-    const config1 = createConfiguration({cssLoaders})
+    const {plugins, ...config1} = createConfiguration({cssLoaders})
     const config2 = createConfiguration({cssLoaders, hotReload: true})
     const config3 = createConfiguration({cssLoaders, target: 'node'})
     expect(config1).toEqual({
@@ -197,13 +197,6 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
           .output
           .devtoolModuleFilenameTemplate,
       },
-      plugins: [
-        ...expectedPlugins,
-        new MiniCssExtractPlugin({
-          chunkFilename: '[name].css',
-          filename: '[name].css',
-        }),
-      ],
     })
     expect(config2).toEqual({
       ...expectedConfig,
@@ -356,7 +349,7 @@ describe('createConfig', () => { // tslint:disable-line:no-big-function
 
   it('should build with tweaked awesome-typescript-loader options', () => {
     const config = createConfiguration({
-      atlOptions: {useBabel: true, configFileName: 'tsconfig.other.json'},
+      typescript: {useBabel: true, configFileName: 'tsconfig.other.json'},
     })
     const {devtoolModuleFilenameTemplate} = config.output
     expect(config).toEqual({

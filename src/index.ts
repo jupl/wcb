@@ -49,6 +49,7 @@ export {addPlugins, addRules, addToEntries}
 export function createConfiguration(options: Options = {}): Configuration {
   const internalOptions = optionsWithDefaults(options)
   const configuration = flow([
+    addTypescript(internalOptions),
     addPaths(internalOptions),
     addDevServer(internalOptions),
     addSourceMaps(internalOptions),
@@ -91,28 +92,7 @@ function createBase({target, ...opts}: InternalOptions): Configuration {
         [path.join(dir, b)]: [file],
       }), {}),
     mode: opts.environment,
-    module: {
-      ...module,
-      rules: [
-        ...rules,
-        {
-          exclude: /node_modules/,
-          test: /\.[jt]sx?$/,
-          use: [
-            {
-              loader: 'awesome-typescript-loader',
-              options: {
-                cacheDirectory: 'node_modules/.awcache',
-                forceIsolatedModules: true,
-                transpileOnly: true,
-                useCache: opts.hotReload,
-                ...opts.atlOptions,
-              },
-            },
-          ],
-        },
-      ],
-    },
+    module: {...module, rules},
     optimization: {...optimization, minimize: false, splitChunks: false},
     output: {
       ...output,
@@ -148,6 +128,29 @@ function addAssets({assetsIgnore, log, ...opts}: InternalOptions) {
     info(log, `${ADD} Copy assets from ${chalk.bold(from)}`)
     const ignore = [...IGNORE_GLOBS, ...assetsIgnore]
     return addPlugins(configuration, [new CopyPlugin([{from, ignore}])])
+  }
+}
+
+function addTypescript({typescript, hotReload}: InternalOptions) {
+  return (configuration: Configuration): Configuration => {
+    if(!typescript) { return configuration }
+    const options = typescript === true ? {} : typescript
+    return addRules(configuration, [{
+      exclude: /node_modules/,
+      test: /\.[jt]sx?$/,
+      use: [
+        {
+          loader: 'awesome-typescript-loader',
+          options: {
+            cacheDirectory: 'node_modules/.awcache',
+            forceIsolatedModules: true,
+            transpileOnly: true,
+            useCache: hotReload,
+            ...options,
+          },
+        },
+      ],
+    }])
   }
 }
 
@@ -274,7 +277,7 @@ function addProduction({log, ...opts}: InternalOptions) {
     info(log, `${ADD} Production`)
     let plugins: Webpack.Plugin[] = [
       new Webpack.LoaderOptionsPlugin({minimize: true, debug: false}),
-      new TerserPlugin({parallel: true, sourceMap: !!opts.sourceMaps}),
+      new TerserPlugin(),
     ]
     if(opts.cssLoaders.length > 0) {
       plugins = [...plugins, new OptimizeCssPlugin()]
@@ -391,7 +394,7 @@ function isNodeTarget(target: Target, rendererCounts = false) {
 function optionsWithDefaults(options: Options): InternalOptions {
   const {
     assets = false,
-    atlOptions = {},
+    typescript = {},
     common = false,
     cssLoaders = [],
     destination = '',
@@ -426,7 +429,6 @@ function optionsWithDefaults(options: Options): InternalOptions {
   return {
     assets,
     assetsIgnore,
-    atlOptions,
     chunkFilename,
     common,
     cssLoaders,
@@ -443,6 +445,7 @@ function optionsWithDefaults(options: Options): InternalOptions {
     sourceMaps,
     split,
     target,
+    typescript,
     webpack,
   }
 }
@@ -471,6 +474,7 @@ function info(id: string | boolean, message: string) {
 }
 
 function chunkName(_: unknown, chunks: Chunk[]) {
+  // tslint:disable-next-line:strict-boolean-expressions
   const names = chunks.map(({name}) => name).filter(name => !!name).sort()
   if(names.length <= 1) { return names[0] }
   const chunk = names

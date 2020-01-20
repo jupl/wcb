@@ -1,6 +1,7 @@
 {
   "extends": "@jupl/tslint-config",
   "rules": {
+    "completed-docs": false,
     "max-file-line-count": [true, 500]
   }
 }

@@ -41,7 +41,6 @@ export interface CSSLoader extends Webpack.RuleSetRule {
 export interface Options {
   assets?: string | boolean
   assetsIgnore?: string[]
-  atlOptions?: LoaderConfig
   chunkFilename?: string
   common?: string | boolean
   devServer?: boolean
@@ -58,5 +57,6 @@ export interface Options {
   sourceMaps?: Devtool
   split?: boolean
   target?: Target
+  typescript?: LoaderConfig | boolean
   webpack?: Webpack.Configuration
 }
